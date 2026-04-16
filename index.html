@@ -676,6 +676,35 @@
     margin: 24px 0;
   }
 
+  /* ─── REP LOGIN ─── */
+  #rep-login {
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+
+  .rep-login-card {
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .rep-login-card .logo {
+    justify-content: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .rep-login-card h2 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .rep-login-card .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 2rem;
+  }
+
   /* ─── REP EVENT PICKER ─── */
   #rep-events {
     flex-direction: column;
@@ -1335,6 +1364,28 @@
 </div>
 
 <!-- REP EVENT PICKER -->
+<!-- REP LOGIN SCREEN -->
+<div id="rep-login" class="screen">
+  <div class="rep-login-card">
+    <div class="logo">
+      <svg class="logo-star" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M50 2C52 34,66 48,98 50C66 52,52 66,50 98C48 66,34 52,2 50C34 48,48 34,50 2Z" fill="currentColor"/>
+      </svg>
+      <span class="logo-wordmark">Legora</span>
+    </div>
+    <h2>Who are you?</h2>
+    <p class="subtitle">Your name is attached to every lead you log.</p>
+    <div style="margin-bottom:12px;">
+      <label>Your full name</label>
+      <input type="text" id="repNameInput" placeholder="e.g. Anna Svensson" autocomplete="name" />
+    </div>
+    <button class="btn-primary" onclick="saveRepName()">Continue →</button>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="pin-back-link" onclick="goTo('role-select')">← Back</button>
+    </div>
+  </div>
+</div>
+
 <div id="rep-events" class="screen">
   <div class="rep-top">
     <div class="logo" style="margin:0;">
@@ -1347,7 +1398,7 @@
   </div>
   <div class="rep-body">
     <h2>Choose your event</h2>
-    <p class="subtitle">Tap to start logging leads</p>
+    <p class="subtitle">Logging as <strong id="repNameDisplay">—</strong> · <button class="back-link" onclick="changeRepName()">Change</button></p>
     <div class="event-pick-list" id="repEventList">
       <div class="empty-state">No events found. Ask your admin to add one.</div>
     </div>
@@ -1380,21 +1431,19 @@
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var data = JSON.parse(e.postData.contents);
 
-  // Add header row if sheet is empty
   if (sheet.getLastRow() === 0) {
     sheet.appendRow([
-      "Timestamp","Event","First Name","Last Name",
+      "Timestamp","Rep","Event","First Name","Last Name",
       "Email","Company","Job Title","# Lawyers",
       "Phone","Rating","Notes"
     ]);
   }
 
   sheet.appendRow([
-    data.timestamp, data.event,
-    data.firstName, data.lastName,
-    data.email, data.company,
-    data.jobTitle, data.lawyers,
-    data.phone, data.rating, data.notes
+    data.timestamp, data.repName || "",
+    data.event, data.firstName, data.lastName,
+    data.email, data.company, data.jobTitle,
+    data.lawyers, data.phone, data.rating, data.notes
   ]);
 
   return ContentService
@@ -1575,6 +1624,8 @@
     saveWebhook(url)       { localStorage.setItem('lg_webhook', url); },
     getLeads(eventId)      { return JSON.parse(localStorage.getItem('lg_leads_' + eventId) || '[]'); },
     saveLeads(eventId, arr){ localStorage.setItem('lg_leads_' + eventId, JSON.stringify(arr)); },
+    getRepName()           { return localStorage.getItem('lg_rep_name') || ''; },
+    saveRepName(name)      { localStorage.setItem('lg_rep_name', name); },
   };
 
   // ─── ADMIN — TABS ───
@@ -1748,8 +1799,16 @@
   let selectedEventId = '';
   let repAttendees = [];
   let loggedIds = new Set();
+  let repName = '';
 
   function openRepEvents() {
+    repName = DB.getRepName();
+    if (!repName) {
+      document.getElementById('repNameInput').value = '';
+      goTo('rep-login');
+      return;
+    }
+    document.getElementById('repNameDisplay').textContent = repName;
     const events = DB.getEvents();
     const el = document.getElementById('repEventList');
     if (!events.length) {
@@ -1768,6 +1827,19 @@
       }).join('');
     }
     goTo('rep-events');
+  }
+
+  function saveRepName() {
+    const name = document.getElementById('repNameInput').value.trim();
+    if (!name) { showToast('Please enter your name', 'error'); return; }
+    DB.saveRepName(name);
+    repName = name;
+    openRepEvents();
+  }
+
+  function changeRepName() {
+    document.getElementById('repNameInput').value = repName;
+    goTo('rep-login');
   }
 
   function openRepLogging(eventId, eventName) {
@@ -1857,6 +1929,7 @@
       phone:     '',
       rating:    sheetRatingVal,
       notes:     document.getElementById('sheetNotes').value.trim(),
+      repName:   repName,
       _attendeeId: activeAttendee.id,
     };
     const btn   = document.getElementById('sheetSubmitBtn');
@@ -1920,6 +1993,7 @@
       phone:     document.getElementById('wiPhone').value.trim(),
       rating:    wiRatingVal,
       notes:     document.getElementById('wiNotes').value.trim(),
+      repName:   repName,
     };
     const btn   = document.getElementById('wiSubmitBtn');
     const label = document.getElementById('wiSubmitLabel');
@@ -1985,9 +2059,9 @@
 
   function exportCSV() {
     if (!leads.length) { showToast('No leads to export', 'error'); return; }
-    const headers = ['Timestamp','Event','First Name','Last Name','Email','Company','Job Title','# Lawyers','Phone','Rating','Notes'];
+    const headers = ['Timestamp','Rep','Event','First Name','Last Name','Email','Company','Job Title','# Lawyers','Phone','Rating','Notes'];
     const rows = leads.map(l => [
-      l.timestamp, l.event, l.firstName, l.lastName, l.email,
+      l.timestamp, l.repName, l.event, l.firstName, l.lastName, l.email,
       l.company, l.jobTitle, l.lawyers, l.phone, l.rating, l.notes
     ].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(','));
     const csv = [headers.join(','), ...rows].join('\n');
@@ -2021,6 +2095,9 @@
     renderEventList();
     renderAttendeeEventSelect();
     document.getElementById('attSearch').addEventListener('input', filterAttendees);
+    document.getElementById('repNameInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') saveRepName();
+    });
   })();
 </script>
 </body>
