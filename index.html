@@ -1930,6 +1930,7 @@
       return;
     }
     DB.saveFirebaseConfig(raw);
+    await pushLocalToFirebase();
     await pullFromFirebase();
     setupFirebaseListeners();
     setFirebaseStatus('ok', 'Connected · live sync active');
@@ -1937,6 +1938,19 @@
     renderEventList();
     renderAttendeeEventSelect();
     populateDashEventSelect();
+  }
+
+  async function pushLocalToFirebase() {
+    const events = DB.getEvents();
+    for (const ev of events) {
+      Firebase.set('events/' + ev.id, ev);
+      const atts = DB.getAttendees(ev.id);
+      atts.forEach(a => Firebase.set('attendees/' + ev.id + '/' + a.id, a));
+      const leads = DB.getLeads(ev.id);
+      leads.forEach(l => Firebase.set('leads/' + ev.id + '/' + l.id, l));
+    }
+    const wh = DB.getWebhook();
+    if (wh) Firebase.set('settings/webhook', wh);
   }
 
   async function pullFromFirebase() {
