@@ -1865,7 +1865,11 @@
     renderLead(lead);
     filterAttendees();
     closeSheet(null, 'sheet-quicklog');
-    showToast(`${lead.firstName} ${lead.lastName} logged ✓`);
+    if (status === 'ok') {
+      showToast(`${lead.firstName} ${lead.lastName} logged ✓`);
+    } else {
+      showToast('Saved locally — check webhook URL in settings', 'error');
+    }
   }
 
   // ─── WALK-IN SHEET ───
@@ -1920,7 +1924,11 @@
     document.getElementById('leadCount').textContent = leads.length;
     renderLead(lead);
     closeSheet(null, 'sheet-walkin');
-    showToast(`${firstName} ${lastName} logged ✓`);
+    if (status === 'ok') {
+      showToast(`${firstName} ${lastName} logged ✓`);
+    } else {
+      showToast('Saved locally — check webhook URL in settings', 'error');
+    }
   }
 
   // ─── SHARED SUBMIT / RENDER ───
@@ -1930,7 +1938,7 @@
       await fetch(webhookUrl, {
         method: 'POST',
         mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(lead),
       });
       return 'ok';
