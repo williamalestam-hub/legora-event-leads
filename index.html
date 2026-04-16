@@ -1203,6 +1203,117 @@
     text-decoration: underline;
   }
   .pin-back-link:hover { color: var(--text); }
+
+  /* ─── DASHBOARD ─── */
+  .dash-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    max-width: 540px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .dash-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .dash-total {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .dash-total-val {
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    line-height: 1;
+  }
+
+  .dash-total-label { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  .dash-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .dash-stat-val {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    line-height: 1;
+  }
+
+  .dash-stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .dash-stat.hot  .dash-stat-val { color: #ff6464; }
+  .dash-stat.warm .dash-stat-val { color: var(--amber); }
+  .dash-stat.cold .dash-stat-val { color: var(--muted); }
+
+  .dash-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 20px 0 10px;
+  }
+
+  .rep-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    gap: 12px;
+  }
+
+  .rep-row-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .rep-row-count { font-family: 'DM Mono', monospace; font-size: 14px; color: var(--text); }
+
+  .rep-row-ratings {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .rep-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 99px;
+  }
+
+  .rep-pill.hot  { background: rgba(255,100,100,0.15); color: #ff6464; }
+  .rep-pill.warm { background: rgba(245,166,35,0.15);  color: var(--amber); }
+  .rep-pill.cold { background: rgba(122,154,132,0.15); color: var(--muted); }
+
+  .dash-refresh {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 16px;
+  }
+
+  /* ─── EDITABLE LEAD CARDS ─── */
+  .lead-card {
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .lead-card:hover { border-color: var(--border2); }
+  .lead-card:active { transform: scale(0.99); }
 </style>
 </head>
 <body>
@@ -1233,7 +1344,66 @@
           <span class="role-btn-desc">Log leads on-site at an event</span>
         </div>
       </button>
+      <button class="role-btn" onclick="openManagerEvents()">
+        <div class="role-btn-icon">📊</div>
+        <div class="role-btn-text">
+          <span class="role-btn-label">Manager</span>
+          <span class="role-btn-desc">Live dashboard — follow leads in real time</span>
+        </div>
+      </button>
     </div>
+  </div>
+</div>
+
+<!-- MANAGER EVENT PICKER -->
+<div id="manager-events" class="screen">
+  <div class="rep-top">
+    <div class="logo" style="margin:0;">
+      <svg class="logo-star" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M50 2C52 34,66 48,98 50C66 52,52 66,50 98C48 66,34 52,2 50C34 48,48 34,50 2Z" fill="currentColor"/>
+      </svg>
+      <span class="logo-wordmark">Legora</span>
+    </div>
+    <button class="btn-icon" onclick="goTo('role-select')">Exit</button>
+  </div>
+  <div class="rep-body">
+    <h2>Live dashboard</h2>
+    <p class="subtitle">Select an event to monitor</p>
+    <div class="event-pick-list" id="mgrEventList">
+      <div class="empty-state">No events found.</div>
+    </div>
+  </div>
+</div>
+
+<!-- MANAGER DASHBOARD -->
+<div id="manager-dashboard" class="screen">
+  <div class="logging-top">
+    <button class="btn-back" onclick="openManagerEvents()">←</button>
+    <div class="event-tag" id="mgrEventTag">Event</div>
+    <button class="btn-icon" onclick="refreshManagerDashboard()">↻ Refresh</button>
+  </div>
+  <div class="dash-body">
+    <div class="dash-total">
+      <div class="dash-total-val" id="mgrTotal">0</div>
+      <div class="dash-total-label">total leads logged</div>
+    </div>
+    <div class="dash-stats">
+      <div class="dash-stat hot">
+        <div class="dash-stat-val" id="mgrHot">0</div>
+        <div class="dash-stat-label">🔥 Hot</div>
+      </div>
+      <div class="dash-stat warm">
+        <div class="dash-stat-val" id="mgrWarm">0</div>
+        <div class="dash-stat-label">☀️ Warm</div>
+      </div>
+      <div class="dash-stat cold">
+        <div class="dash-stat-val" id="mgrCold">0</div>
+        <div class="dash-stat-label">❄️ Cold</div>
+      </div>
+    </div>
+    <div class="dash-section-title">By rep</div>
+    <div id="mgrRepList"></div>
+    <div class="dash-refresh" id="mgrRefreshTime"></div>
   </div>
 </div>
 
@@ -1289,6 +1459,7 @@
     <button class="tab-btn active" onclick="switchTab('events')">Events</button>
     <button class="tab-btn" onclick="switchTab('attendees')">Attendees</button>
     <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+    <button class="tab-btn" onclick="switchTab('dashboard')">Dashboard</button>
   </div>
 
   <div class="admin-body">
@@ -1348,6 +1519,17 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- DASHBOARD TAB -->
+    <div id="tab-dashboard" class="tab-pane">
+      <div class="admin-section">
+        <div class="admin-section-title">Select event</div>
+        <select id="dashEventSelect" onchange="renderAdminDashboard()">
+          <option value="">— choose an event —</option>
+        </select>
+      </div>
+      <div id="adminDashContent"></div>
     </div>
 
     <!-- SETTINGS TAB -->
@@ -1551,6 +1733,29 @@
   </div>
 </div>
 
+<!-- EDIT LEAD SHEET -->
+<div class="sheet-overlay" id="sheet-edit" onclick="closeSheet(event,'sheet-edit')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-name" id="editName">Name</div>
+    <div class="sheet-sub" id="editSub">—</div>
+    <div class="sheet-label" style="margin-top:16px;">Update lead quality</div>
+    <div class="rating-big">
+      <button class="rating-big-btn" onclick="editRating('Hot')">
+        <span class="rbig-icon">🔥</span>Hot
+      </button>
+      <button class="rating-big-btn" onclick="editRating('Warm')">
+        <span class="rbig-icon">☀️</span>Warm
+      </button>
+      <button class="rating-big-btn" onclick="editRating('Cold')">
+        <span class="rbig-icon">❄️</span>Cold
+      </button>
+    </div>
+    <textarea class="sheet-notes" id="editNotes" placeholder="Add or update notes…" rows="4"></textarea>
+    <button class="btn-primary" onclick="saveEditLead()">Save changes</button>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -1562,6 +1767,9 @@
 
   // ─── NAVIGATION ───
   function goTo(screenId) {
+    if (screenId !== 'manager-dashboard' && mgrRefreshTimer) {
+      clearInterval(mgrRefreshTimer); mgrRefreshTimer = null;
+    }
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
     window.scrollTo(0, 0);
@@ -1647,6 +1855,7 @@
     document.getElementById('newEventName').value = '';
     renderEventList();
     renderAttendeeEventSelect();
+    populateDashEventSelect();
     showToast('Event added');
   }
 
@@ -1934,6 +2143,7 @@
       rating:    sheetRatingVal,
       notes:     document.getElementById('sheetNotes').value.trim(),
       repName:   repName,
+      id:        Date.now().toString() + Math.random().toString(36).slice(2),
       _attendeeId: activeAttendee.id,
     };
     const btn   = document.getElementById('sheetSubmitBtn');
@@ -1998,6 +2208,7 @@
       rating:    wiRatingVal,
       notes:     document.getElementById('wiNotes').value.trim(),
       repName:   repName,
+      id:        Date.now().toString() + Math.random().toString(36).slice(2),
     };
     const btn   = document.getElementById('wiSubmitBtn');
     const label = document.getElementById('wiSubmitLabel');
@@ -2039,17 +2250,19 @@
   }
 
   function renderLead(lead) {
-    const list = document.getElementById('leadList');
+    const list  = document.getElementById('leadList');
     const title = document.getElementById('listTitle');
     title.style.display = 'block';
 
-    const initials = (lead.firstName[0] + lead.lastName[0]).toUpperCase();
+    const initials   = (lead.firstName[0] + lead.lastName[0]).toUpperCase();
     const ratingClass = lead.rating ? 'rating-' + lead.rating.toLowerCase() : '';
-    const syncClass = { ok: 'sync-ok', fail: 'sync-fail', pending: 'sync-pending' }[lead._syncStatus];
+    const syncClass   = { ok: 'sync-ok', fail: 'sync-fail', pending: 'sync-pending' }[lead._syncStatus];
 
     const card = document.createElement('div');
-    card.className = 'lead-card';
-    card.innerHTML = `
+    card.className  = 'lead-card';
+    card.dataset.lid = lead.id;
+    card.onclick    = () => openEditLead(lead.id);
+    card.innerHTML  = `
       <div class="lead-avatar">${initials}</div>
       <div class="lead-info">
         <div class="lead-name">${lead.firstName} ${lead.lastName}</div>
@@ -2059,6 +2272,189 @@
       <div class="lead-sync ${syncClass}" title="${lead._syncStatus}"></div>
     `;
     list.insertBefore(card, list.firstChild);
+  }
+
+  function refreshLeadCard(lead) {
+    const card = document.querySelector(`.lead-card[data-lid="${lead.id}"]`);
+    if (!card) return;
+    const ratingClass = lead.rating ? 'rating-' + lead.rating.toLowerCase() : '';
+    const syncClass   = { ok: 'sync-ok', fail: 'sync-fail', pending: 'sync-pending' }[lead._syncStatus];
+    card.querySelector('.lead-rating') && (card.querySelector('.lead-rating').outerHTML = '');
+    card.innerHTML = `
+      <div class="lead-avatar">${(lead.firstName[0] + lead.lastName[0]).toUpperCase()}</div>
+      <div class="lead-info">
+        <div class="lead-name">${lead.firstName} ${lead.lastName}</div>
+        <div class="lead-meta">${[lead.company, lead.jobTitle].filter(Boolean).join(' · ')}</div>
+      </div>
+      ${lead.rating ? `<span class="lead-rating ${ratingClass}">${lead.rating}</span>` : ''}
+      <div class="lead-sync ${syncClass}" title="${lead._syncStatus}"></div>
+    `;
+  }
+
+  // ─── EDIT LEAD ───
+  let editLeadId   = null;
+  let editRatingVal = '';
+
+  function openEditLead(leadId) {
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
+    editLeadId   = leadId;
+    editRatingVal = lead.rating || '';
+    document.getElementById('editName').textContent = `${lead.firstName} ${lead.lastName}`;
+    document.getElementById('editSub').textContent  = [lead.company, lead.jobTitle].filter(Boolean).join(' · ') || '—';
+    document.getElementById('editNotes').value      = lead.notes || '';
+    const map = { Hot: 'sel-hot', Warm: 'sel-warm', Cold: 'sel-cold' };
+    document.querySelectorAll('#sheet-edit .rating-big-btn').forEach(b => {
+      b.className = 'rating-big-btn' + (b.textContent.includes(editRatingVal) ? ' ' + (map[editRatingVal] || '') : '');
+    });
+    document.getElementById('sheet-edit').classList.add('open');
+  }
+
+  function editRating(val) {
+    editRatingVal = val;
+    const map = { Hot: 'sel-hot', Warm: 'sel-warm', Cold: 'sel-cold' };
+    document.querySelectorAll('#sheet-edit .rating-big-btn').forEach(b => {
+      b.className = 'rating-big-btn' + (b.textContent.includes(val) ? ' ' + map[val] : '');
+    });
+  }
+
+  async function saveEditLead() {
+    const lead = leads.find(l => l.id === editLeadId);
+    if (!lead) return;
+    lead.rating = editRatingVal;
+    lead.notes  = document.getElementById('editNotes').value.trim();
+    lead.timestamp = new Date().toISOString();
+    DB.saveLeads(selectedEventId, leads);
+    const status = await postLead(lead);
+    lead._syncStatus = status;
+    DB.saveLeads(selectedEventId, leads);
+    refreshLeadCard(lead);
+    closeSheet(null, 'sheet-edit');
+    showToast('Lead updated');
+  }
+
+  // ─── MANAGER DASHBOARD ───
+  let mgrEventId   = '';
+  let mgrRefreshTimer = null;
+
+  function openManagerEvents() {
+    const events = DB.getEvents();
+    const el = document.getElementById('mgrEventList');
+    if (!events.length) {
+      el.innerHTML = '<div class="empty-state">No events found.</div>';
+    } else {
+      el.innerHTML = events.map(e => {
+        const n = DB.getLeads(e.id).length;
+        return `
+          <div class="event-pick-card" data-eid="${e.id}" data-ename="${e.name.replace(/"/g,'&quot;')}"
+               onclick="openManagerDashboard(this.dataset.eid, this.dataset.ename)">
+            <div>
+              <div class="event-pick-name">${e.name}</div>
+              <div class="event-pick-count">${n} lead${n !== 1 ? 's' : ''} logged</div>
+            </div>
+            <div class="event-pick-arrow">›</div>
+          </div>`;
+      }).join('');
+    }
+    if (mgrRefreshTimer) { clearInterval(mgrRefreshTimer); mgrRefreshTimer = null; }
+    goTo('manager-events');
+  }
+
+  function openManagerDashboard(eventId, eventName) {
+    mgrEventId = eventId;
+    document.getElementById('mgrEventTag').textContent = eventName;
+    renderManagerDashboard();
+    if (mgrRefreshTimer) clearInterval(mgrRefreshTimer);
+    mgrRefreshTimer = setInterval(renderManagerDashboard, 30000);
+    goTo('manager-dashboard');
+  }
+
+  function refreshManagerDashboard() { renderManagerDashboard(); }
+
+  function renderManagerDashboard() {
+    const leads = DB.getLeads(mgrEventId);
+    const hot   = leads.filter(l => l.rating === 'Hot').length;
+    const warm  = leads.filter(l => l.rating === 'Warm').length;
+    const cold  = leads.filter(l => l.rating === 'Cold').length;
+    document.getElementById('mgrTotal').textContent = leads.length;
+    document.getElementById('mgrHot').textContent   = hot;
+    document.getElementById('mgrWarm').textContent  = warm;
+    document.getElementById('mgrCold').textContent  = cold;
+
+    const byRep = {};
+    leads.forEach(l => {
+      const name = l.repName || 'Unknown';
+      if (!byRep[name]) byRep[name] = { total: 0, hot: 0, warm: 0, cold: 0 };
+      byRep[name].total++;
+      if (l.rating === 'Hot')  byRep[name].hot++;
+      if (l.rating === 'Warm') byRep[name].warm++;
+      if (l.rating === 'Cold') byRep[name].cold++;
+    });
+
+    const el = document.getElementById('mgrRepList');
+    if (!Object.keys(byRep).length) {
+      el.innerHTML = '<div class="empty-state">No leads logged yet.</div>';
+    } else {
+      el.innerHTML = Object.entries(byRep)
+        .sort((a, b) => b[1].total - a[1].total)
+        .map(([name, s]) => `
+          <div class="rep-row">
+            <div class="rep-row-name">${name}</div>
+            <div class="rep-row-count">${s.total}</div>
+            <div class="rep-row-ratings">
+              ${s.hot  ? `<span class="rep-pill hot">${s.hot}🔥</span>`  : ''}
+              ${s.warm ? `<span class="rep-pill warm">${s.warm}☀️</span>` : ''}
+              ${s.cold ? `<span class="rep-pill cold">${s.cold}❄️</span>` : ''}
+            </div>
+          </div>`).join('');
+    }
+    const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('mgrRefreshTime').textContent = `Last refreshed ${t} · auto-refreshes every 30s`;
+  }
+
+  // ─── ADMIN DASHBOARD TAB ───
+  function renderAdminDashboard() {
+    const eventId = document.getElementById('dashEventSelect').value;
+    const el = document.getElementById('adminDashContent');
+    if (!eventId) { el.innerHTML = ''; return; }
+    const leads = DB.getLeads(eventId);
+    if (!leads.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:24px 0;">No leads logged yet.</div>';
+      return;
+    }
+    const hot  = leads.filter(l => l.rating === 'Hot').length;
+    const warm = leads.filter(l => l.rating === 'Warm').length;
+    const cold = leads.filter(l => l.rating === 'Cold').length;
+    const byRep = {};
+    leads.forEach(l => {
+      const name = l.repName || 'Unknown';
+      if (!byRep[name]) byRep[name] = { total: 0, hot: 0, warm: 0, cold: 0 };
+      byRep[name].total++;
+      if (l.rating === 'Hot')  byRep[name].hot++;
+      if (l.rating === 'Warm') byRep[name].warm++;
+      if (l.rating === 'Cold') byRep[name].cold++;
+    });
+    el.innerHTML = `
+      <div class="dash-total" style="margin-bottom:10px;">
+        <div class="dash-total-val">${leads.length}</div>
+        <div class="dash-total-label">total leads</div>
+      </div>
+      <div class="dash-stats" style="margin-bottom:20px;">
+        <div class="dash-stat hot"><div class="dash-stat-val">${hot}</div><div class="dash-stat-label">🔥 Hot</div></div>
+        <div class="dash-stat warm"><div class="dash-stat-val">${warm}</div><div class="dash-stat-label">☀️ Warm</div></div>
+        <div class="dash-stat cold"><div class="dash-stat-val">${cold}</div><div class="dash-stat-label">❄️ Cold</div></div>
+      </div>
+      <div class="admin-section-title">By rep</div>
+      ${Object.entries(byRep).sort((a,b) => b[1].total - a[1].total).map(([name, s]) => `
+        <div class="rep-row">
+          <div class="rep-row-name">${name}</div>
+          <div class="rep-row-count">${s.total}</div>
+          <div class="rep-row-ratings">
+            ${s.hot  ? `<span class="rep-pill hot">${s.hot}🔥</span>`  : ''}
+            ${s.warm ? `<span class="rep-pill warm">${s.warm}☀️</span>` : ''}
+            ${s.cold ? `<span class="rep-pill cold">${s.cold}❄️</span>` : ''}
+          </div>
+        </div>`).join('')}`;
   }
 
   function exportCSV() {
@@ -2093,11 +2489,20 @@
   });
 
   // ─── INIT ───
+  function populateDashEventSelect() {
+    const events = DB.getEvents();
+    const sel = document.getElementById('dashEventSelect');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— choose an event —</option>' +
+      events.map(e => `<option value="${e.id}"${e.id === cur ? ' selected' : ''}>${e.name}</option>`).join('');
+  }
+
   (function init() {
     webhookUrl = DB.getWebhook();
     document.getElementById('webhookUrl').value = webhookUrl;
     renderEventList();
     renderAttendeeEventSelect();
+    populateDashEventSelect();
     document.getElementById('attSearch').addEventListener('input', filterAttendees);
     document.getElementById('repNameInput').addEventListener('keydown', e => {
       if (e.key === 'Enter') saveRepName();
