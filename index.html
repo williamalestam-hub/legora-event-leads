@@ -7,16 +7,17 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0e0e0f;
-    --surface: #161618;
-    --surface2: #1e1e21;
+    --bg: #0a3320;
+    --surface: #0e3d26;
+    --surface2: #134f32;
     --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.14);
-    --text: #f0efe8;
-    --muted: #888885;
-    --accent: #c8f562;
-    --accent-dim: rgba(200,245,98,0.12);
-    --red: #ff5f5f;
+    --border2: rgba(255,255,255,0.15);
+    --text: #f5f4ee;
+    --muted: #7a9a84;
+    --accent: #f5f4ee;
+    --accent-dim: rgba(245,244,238,0.1);
+    --accent-fg: #0a3320;
+    --red: #ff6464;
     --amber: #f5a623;
     --green: #4ade80;
     --radius: 12px;
@@ -51,13 +52,24 @@
   }
 
   .logo {
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--accent);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     margin-bottom: 2.5rem;
+  }
+  .logo-star {
+    width: 28px;
+    height: 28px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .logo-wordmark {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
   }
 
   .setup-card h1 {
@@ -182,7 +194,7 @@
     width: 100%;
     padding: 14px;
     background: var(--accent);
-    color: #0e0e0f;
+    color: var(--accent-fg);
     font-family: 'DM Sans', sans-serif;
     font-size: 15px;
     font-weight: 600;
@@ -316,7 +328,7 @@
     width: 100%;
     padding: 14px;
     background: var(--accent);
-    color: #0e0e0f;
+    color: var(--accent-fg);
     font-family: 'DM Sans', sans-serif;
     font-size: 15px;
     font-weight: 600;
@@ -337,8 +349,8 @@
 
   .spinner {
     width: 16px; height: 16px;
-    border: 2px solid rgba(0,0,0,0.2);
-    border-top-color: #0e0e0f;
+    border: 2px solid rgba(10,51,32,0.2);
+    border-top-color: var(--accent-fg);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
     display: none;
@@ -401,7 +413,7 @@
     width: 36px; height: 36px;
     border-radius: 50%;
     background: var(--accent-dim);
-    border: 1px solid rgba(200,245,98,0.2);
+    border: 1px solid rgba(245,244,238,0.2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -481,7 +493,7 @@
     padding: 14px 16px;
     font-family: 'DM Mono', monospace;
     font-size: 12px;
-    color: #b8f5a0;
+    color: #a8d5b5;
     white-space: pre-wrap;
     word-break: break-all;
     margin-top: 8px;
@@ -513,7 +525,12 @@
 <!-- SETUP SCREEN -->
 <div id="setup" class="screen active">
   <div class="setup-card">
-    <div class="logo">Legora</div>
+    <div class="logo">
+      <svg class="logo-star" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M50 2C52 34,66 48,98 50C66 52,52 66,50 98C48 66,34 52,2 50C34 48,48 34,50 2Z" fill="currentColor"/>
+      </svg>
+      <span class="logo-wordmark">Legora</span>
+    </div>
     <h1>Event lead logger</h1>
     <p class="subtitle">Log leads on-site. They sync straight to your Google Sheet.</p>
 
@@ -548,7 +565,12 @@
 <!-- INSTRUCTIONS SCREEN -->
 <div id="instructions" class="screen">
   <div class="instr-card">
-    <div class="logo">Legora</div>
+    <div class="logo">
+      <svg class="logo-star" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M50 2C52 34,66 48,98 50C66 52,52 66,50 98C48 66,34 52,2 50C34 48,48 34,50 2Z" fill="currentColor"/>
+      </svg>
+      <span class="logo-wordmark">Legora</span>
+    </div>
     <h1 style="margin-bottom:8px;">Google Sheet setup</h1>
     <p style="color:var(--muted);font-size:14px;margin-bottom:2rem;">Takes about 2 minutes. Do this once.</p>
 
