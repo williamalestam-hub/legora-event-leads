@@ -1315,6 +1315,8 @@
   .lead-card:hover { border-color: var(--border2); }
   .lead-card:active { transform: scale(0.99); }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -1539,6 +1541,18 @@
         <div class="admin-section-title">Google Sheets webhook URL</div>
         <input type="url" id="webhookUrl" placeholder="https://script.google.com/macros/s/..." />
         <p class="hint-text">No webhook? <button class="back-link" onclick="showInstructions()">See 2-min setup guide →</button></p>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">Firebase — real-time cross-device sync</div>
+        <textarea id="firebaseConfig" rows="6" style="font-family:'DM Mono',monospace;font-size:12px;line-height:1.5;" placeholder='{"apiKey":"...","authDomain":"...","databaseURL":"https://your-project-default-rtdb.firebaseio.com","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+          <button class="btn-add-sm" onclick="connectFirebase()">Connect</button>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div id="fbDot" style="width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background 0.3s;"></div>
+            <span id="fbStatusText" style="font-size:12px;color:var(--muted);">Not connected</span>
+          </div>
+        </div>
+        <p class="hint-text" style="margin-top:8px;">Firebase Console → Project Settings → Your apps → SDK config. Enable Realtime Database (test mode). The "Share" link embeds this config so reps connect automatically.</p>
       </div>
       <button class="btn-primary" onclick="saveSettings()" style="margin-top:4px;">Save settings</button>
     </div>
@@ -1768,8 +1782,11 @@
 
   // ─── NAVIGATION ───
   function goTo(screenId) {
-    if (screenId !== 'manager-dashboard' && mgrRefreshTimer) {
-      clearInterval(mgrRefreshTimer); mgrRefreshTimer = null;
+    if (screenId !== 'manager-dashboard') {
+      if (mgrRefreshTimer) { clearInterval(mgrRefreshTimer); mgrRefreshTimer = null; }
+      if (typeof mgrIsLive !== 'undefined' && mgrIsLive && mgrEventId) {
+        Firebase.off('leads/' + mgrEventId); mgrIsLive = false;
+      }
     }
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
@@ -1835,7 +1852,138 @@
     saveLeads(eventId, arr){ localStorage.setItem('lg_leads_' + eventId, JSON.stringify(arr)); },
     getRepName()           { return localStorage.getItem('lg_rep_name') || ''; },
     saveRepName(name)      { localStorage.setItem('lg_rep_name', name); },
+    getFirebaseConfig()    { return localStorage.getItem('lg_fb_config') || ''; },
+    saveFirebaseConfig(s)  { localStorage.setItem('lg_fb_config', s); },
   };
+
+  // ─── FIREBASE ───
+  const Firebase = {
+    app: null,
+    db: null,
+    _listeners: {},
+
+    init(configStr) {
+      try {
+        const cfg = typeof configStr === 'string' ? JSON.parse(configStr) : configStr;
+        if (!cfg.databaseURL) throw new Error('databaseURL missing');
+        Object.keys(this._listeners).forEach(p => this.off(p));
+        if (this.app) { try { this.app.delete(); } catch {} }
+        this.app = firebase.initializeApp(cfg, 'legora-' + Date.now());
+        this.db  = firebase.database(this.app);
+        return true;
+      } catch(e) {
+        console.error('Firebase init:', e);
+        this.app = null; this.db = null;
+        return false;
+      }
+    },
+
+    ready() { return !!this.db; },
+
+    set(path, data) {
+      if (!this.db) return;
+      this.db.ref(path).set(data).catch(e => console.warn('FB set:', path, e));
+    },
+
+    remove(path) {
+      if (!this.db) return;
+      this.db.ref(path).remove().catch(e => console.warn('FB remove:', path, e));
+    },
+
+    async once(path) {
+      if (!this.db) return null;
+      try { return (await this.db.ref(path).once('value')).val(); }
+      catch(e) { console.warn('FB once:', e); return null; }
+    },
+
+    on(path, cb) {
+      if (!this.db) return;
+      this.off(path);
+      const fn = snap => cb(snap.val());
+      this._listeners[path] = fn;
+      this.db.ref(path).on('value', fn, e => console.warn('FB listener err:', e));
+    },
+
+    off(path) {
+      if (!this.db || !this._listeners[path]) return;
+      this.db.ref(path).off('value', this._listeners[path]);
+      delete this._listeners[path];
+    },
+  };
+
+  function setFirebaseStatus(state, msg) {
+    const dot = document.getElementById('fbDot');
+    const txt = document.getElementById('fbStatusText');
+    if (!dot || !txt) return;
+    dot.style.background = state === 'ok' ? 'var(--green)' : state === 'err' ? 'var(--red)' : 'var(--muted)';
+    txt.style.color      = state === 'ok' ? 'var(--green)' : state === 'err' ? 'var(--red)' : 'var(--muted)';
+    txt.textContent = msg;
+  }
+
+  async function connectFirebase() {
+    const raw = document.getElementById('firebaseConfig').value.trim();
+    if (!raw) { showToast('Paste your Firebase config JSON first', 'error'); return; }
+    setFirebaseStatus('', 'Connecting…');
+    if (!Firebase.init(raw)) {
+      setFirebaseStatus('err', 'Invalid config');
+      showToast('Firebase config error — check JSON', 'error');
+      return;
+    }
+    DB.saveFirebaseConfig(raw);
+    await pullFromFirebase();
+    setupFirebaseListeners();
+    setFirebaseStatus('ok', 'Connected · live sync active');
+    showToast('Firebase connected — data synced ✓');
+    renderEventList();
+    renderAttendeeEventSelect();
+    populateDashEventSelect();
+  }
+
+  async function pullFromFirebase() {
+    const eventsObj = await Firebase.once('events');
+    if (eventsObj) {
+      const fbEvents = Object.values(eventsObj).filter(Boolean);
+      const existing = DB.getEvents();
+      const existingIds = new Set(existing.map(e => e.id));
+      DB.saveEvents([...existing, ...fbEvents.filter(e => !existingIds.has(e.id))]);
+    }
+    for (const ev of DB.getEvents()) {
+      const attsObj = await Firebase.once('attendees/' + ev.id);
+      if (attsObj) {
+        const fbAtts = Object.values(attsObj).filter(Boolean);
+        const existing = DB.getAttendees(ev.id);
+        const existingIds = new Set(existing.map(a => a.id));
+        DB.saveAttendees(ev.id, [...existing, ...fbAtts.filter(a => !existingIds.has(a.id))]);
+      }
+      const leadsObj = await Firebase.once('leads/' + ev.id);
+      if (leadsObj) {
+        const fbLeads = Object.values(leadsObj).filter(Boolean);
+        const existing = DB.getLeads(ev.id);
+        const existingIds = new Set(existing.map(l => l.id));
+        DB.saveLeads(ev.id, [...existing, ...fbLeads.filter(l => !existingIds.has(l.id))]);
+      }
+    }
+    const wh = await Firebase.once('settings/webhook');
+    if (wh) {
+      DB.saveWebhook(wh);
+      webhookUrl = wh;
+      const el = document.getElementById('webhookUrl');
+      if (el && !el.value) el.value = wh;
+    }
+  }
+
+  function setupFirebaseListeners() {
+    Firebase.on('events', eventsObj => {
+      if (!eventsObj) return;
+      const fbEvents = Object.values(eventsObj).filter(Boolean);
+      const existing  = DB.getEvents();
+      const fbIds     = new Set(fbEvents.map(e => e.id));
+      DB.saveEvents([...fbEvents, ...existing.filter(e => !fbIds.has(e.id))]);
+      renderEventList();
+      renderAttendeeEventSelect();
+      populateDashEventSelect();
+    });
+  }
 
   // ─── ADMIN — TABS ───
   function switchTab(name) {
@@ -1851,8 +1999,10 @@
     const name = document.getElementById('newEventName').value.trim();
     if (!name) return;
     const events = DB.getEvents();
-    events.push({ id: Date.now().toString(), name });
+    const ev = { id: Date.now().toString(), name };
+    events.push(ev);
     DB.saveEvents(events);
+    if (Firebase.ready()) Firebase.set('events/' + ev.id, ev);
     document.getElementById('newEventName').value = '';
     renderEventList();
     renderAttendeeEventSelect();
@@ -1863,6 +2013,7 @@
   function adminDeleteEvent(id) {
     const events = DB.getEvents().filter(e => e.id !== id);
     DB.saveEvents(events);
+    if (Firebase.ready()) Firebase.remove('events/' + id);
     renderEventList();
     renderAttendeeEventSelect();
   }
@@ -1893,7 +2044,8 @@
     const events    = DB.getEvents().filter(e => e.id === eventId);
     const attendees = { [eventId]: DB.getAttendees(eventId) };
     const webhook   = DB.getWebhook();
-    const payload   = btoa(JSON.stringify({ events, attendees, webhook }));
+    const fbConfig  = DB.getFirebaseConfig();
+    const payload   = btoa(JSON.stringify({ events, attendees, webhook, fbConfig }));
     const url       = location.href.split('#')[0] + '#setup=' + payload;
     navigator.clipboard.writeText(url)
       .then(() => showToast('Share link copied — send it to reps'))
@@ -1905,6 +2057,7 @@
   function adminClearLeads(eventId, eventName) {
     if (!confirm(`Clear all logged leads for "${eventName}"? This cannot be undone.`)) return;
     DB.saveLeads(eventId, []);
+    if (Firebase.ready()) Firebase.remove('leads/' + eventId);
     renderEventList();
     populateDashEventSelect();
     showToast('Leads cleared');
@@ -1952,15 +2105,17 @@
     const lastName  = document.getElementById('attLast').value.trim();
     if (!firstName || !lastName) { showToast('First and last name required', 'error'); return; }
     const atts = DB.getAttendees(id);
-    atts.push({
+    const att = {
       id: Date.now().toString(),
       firstName,
       lastName,
       email:   document.getElementById('attEmail').value.trim(),
       company: document.getElementById('attCompany').value.trim(),
       jobTitle: document.getElementById('attTitle').value.trim(),
-    });
+    };
+    atts.push(att);
     DB.saveAttendees(id, atts);
+    if (Firebase.ready()) Firebase.set('attendees/' + id + '/' + att.id, att);
     ['attFirst','attLast','attEmail','attCompany','attTitle'].forEach(f => document.getElementById(f).value = '');
     renderAttendeeList(id);
     renderEventList();
@@ -1970,6 +2125,7 @@
   function adminDeleteAttendee(eventId, attId) {
     const atts = DB.getAttendees(eventId).filter(a => a.id !== attId);
     DB.saveAttendees(eventId, atts);
+    if (Firebase.ready()) Firebase.remove('attendees/' + eventId + '/' + attId);
     renderAttendeeList(eventId);
     renderEventList();
   }
@@ -2009,6 +2165,9 @@
         added++;
       });
       DB.saveAttendees(eventId, existing);
+      if (Firebase.ready()) {
+        existing.forEach(a => Firebase.set('attendees/' + eventId + '/' + a.id, a));
+      }
       input.value = '';
       renderAttendeeList(eventId);
       renderEventList();
@@ -2022,6 +2181,7 @@
     const url = document.getElementById('webhookUrl').value.trim();
     DB.saveWebhook(url);
     webhookUrl = url;
+    if (Firebase.ready()) Firebase.set('settings/webhook', url);
     showToast('Settings saved');
   }
 
@@ -2178,6 +2338,7 @@
     lead._syncStatus = status;
     leads.push(lead);
     DB.saveLeads(selectedEventId, leads);
+    if (Firebase.ready()) Firebase.set('leads/' + selectedEventId + '/' + lead.id, lead);
     loggedIds.add(activeAttendee.id);
     document.getElementById('leadCount').textContent = leads.length;
     renderLead(lead);
@@ -2242,6 +2403,7 @@
     lead._syncStatus = status;
     leads.push(lead);
     DB.saveLeads(selectedEventId, leads);
+    if (Firebase.ready()) Firebase.set('leads/' + selectedEventId + '/' + lead.id, lead);
     document.getElementById('leadCount').textContent = leads.length;
     renderLead(lead);
     closeSheet(null, 'sheet-walkin');
@@ -2352,6 +2514,7 @@
     const status = await postLead(lead);
     lead._syncStatus = status;
     DB.saveLeads(selectedEventId, leads);
+    if (Firebase.ready()) Firebase.set('leads/' + selectedEventId + '/' + lead.id, lead);
     refreshLeadCard(lead);
     closeSheet(null, 'sheet-edit');
     showToast('Lead updated');
@@ -2384,16 +2547,31 @@
     goTo('manager-events');
   }
 
+  let mgrIsLive = false;
+
   function openManagerDashboard(eventId, eventName) {
     mgrEventId = eventId;
+    mgrIsLive  = false;
     document.getElementById('mgrEventTag').textContent = eventName;
-    renderManagerDashboard();
-    if (mgrRefreshTimer) clearInterval(mgrRefreshTimer);
-    mgrRefreshTimer = setInterval(renderManagerDashboard, 30000);
+    if (mgrRefreshTimer) { clearInterval(mgrRefreshTimer); mgrRefreshTimer = null; }
+
+    if (Firebase.ready()) {
+      mgrIsLive = true;
+      Firebase.on('leads/' + eventId, leadsObj => {
+        const liveLeads = leadsObj ? Object.values(leadsObj).filter(Boolean) : [];
+        DB.saveLeads(eventId, liveLeads);
+        renderManagerDashboard();
+      });
+    } else {
+      renderManagerDashboard();
+      mgrRefreshTimer = setInterval(renderManagerDashboard, 30000);
+    }
     goTo('manager-dashboard');
   }
 
-  function refreshManagerDashboard() { renderManagerDashboard(); }
+  function refreshManagerDashboard() {
+    if (!Firebase.ready()) renderManagerDashboard();
+  }
 
   function renderManagerDashboard() {
     const leads = DB.getLeads(mgrEventId);
@@ -2433,7 +2611,9 @@
           </div>`).join('');
     }
     const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    document.getElementById('mgrRefreshTime').textContent = `Last refreshed ${t} · auto-refreshes every 30s`;
+    document.getElementById('mgrRefreshTime').textContent = mgrIsLive
+      ? `🔴 Live · last updated ${t}`
+      : `Last refreshed ${t} · auto-refreshes every 30s`;
   }
 
   // ─── ADMIN DASHBOARD TAB ───
@@ -2579,6 +2759,18 @@
         });
       }
       if (payload.webhook && !DB.getWebhook()) DB.saveWebhook(payload.webhook);
+      if (payload.fbConfig && !DB.getFirebaseConfig()) {
+        DB.saveFirebaseConfig(payload.fbConfig);
+        if (Firebase.init(payload.fbConfig)) {
+          pullFromFirebase().then(() => {
+            setupFirebaseListeners();
+            setFirebaseStatus('ok', 'Connected · live sync active');
+            renderEventList();
+            renderAttendeeEventSelect();
+            populateDashEventSelect();
+          });
+        }
+      }
       history.replaceState(null, '', location.pathname);
       showToast('Event loaded — choose your role');
     } catch { /* malformed hash, ignore */ }
@@ -2588,6 +2780,23 @@
     importFromHash();
     webhookUrl = DB.getWebhook();
     document.getElementById('webhookUrl').value = webhookUrl;
+
+    const savedFbConfig = DB.getFirebaseConfig();
+    if (savedFbConfig) {
+      document.getElementById('firebaseConfig').value = savedFbConfig;
+      if (Firebase.init(savedFbConfig)) {
+        setFirebaseStatus('ok', 'Connected · live sync active');
+        pullFromFirebase().then(() => {
+          setupFirebaseListeners();
+          renderEventList();
+          renderAttendeeEventSelect();
+          populateDashEventSelect();
+        });
+      } else {
+        setFirebaseStatus('err', 'Config error — reconnect in Settings');
+      }
+    }
+
     renderEventList();
     renderAttendeeEventSelect();
     populateDashEventSelect();
