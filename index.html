@@ -1433,7 +1433,7 @@
 
   if (sheet.getLastRow() === 0) {
     sheet.appendRow([
-      "Timestamp","Rep","Event","First Name","Last Name",
+      "Timestamp","Rep Name","Event","First Name","Last Name",
       "Email","Company","Job Title","# Lawyers",
       "Phone","Rating","Notes"
     ]);
@@ -2059,7 +2059,7 @@
 
   function exportCSV() {
     if (!leads.length) { showToast('No leads to export', 'error'); return; }
-    const headers = ['Timestamp','Rep','Event','First Name','Last Name','Email','Company','Job Title','# Lawyers','Phone','Rating','Notes'];
+    const headers = ['Timestamp','Rep Name','Event','First Name','Last Name','Email','Company','Job Title','# Lawyers','Phone','Rating','Notes'];
     const rows = leads.map(l => [
       l.timestamp, l.repName, l.event, l.firstName, l.lastName, l.email,
       l.company, l.jobTitle, l.lawyers, l.phone, l.rating, l.notes
