@@ -1543,16 +1543,12 @@
         <p class="hint-text">No webhook? <button class="back-link" onclick="showInstructions()">See 2-min setup guide →</button></p>
       </div>
       <div class="admin-section">
-        <div class="admin-section-title">Firebase — real-time cross-device sync</div>
-        <textarea id="firebaseConfig" rows="6" style="font-family:'DM Mono',monospace;font-size:12px;line-height:1.5;" placeholder='{"apiKey":"...","authDomain":"...","databaseURL":"https://your-project-default-rtdb.firebaseio.com","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
-          <button class="btn-add-sm" onclick="connectFirebase()">Connect</button>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <div id="fbDot" style="width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background 0.3s;"></div>
-            <span id="fbStatusText" style="font-size:12px;color:var(--muted);">Not connected</span>
-          </div>
+        <div class="admin-section-title">Real-time sync</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);">
+          <div id="fbDot" style="width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background 0.3s;"></div>
+          <span id="fbStatusText" style="font-size:13px;color:var(--muted);">Connecting…</span>
         </div>
-        <p class="hint-text" style="margin-top:8px;">Firebase Console → Project Settings → Your apps → SDK config. Enable Realtime Database (test mode). The "Share" link embeds this config so reps connect automatically.</p>
+        <p class="hint-text" style="margin-top:8px;">All devices using this app share the same events, attendees and leads in real time.</p>
       </div>
       <button class="btn-primary" onclick="saveSettings()" style="margin-top:4px;">Save settings</button>
     </div>
@@ -1775,6 +1771,17 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  // Baked-in Firebase config — every device auto-syncs on load
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyAjuTzTz3SG8yF2Mx4BWVQUvYx_33GjH4s",
+    authDomain: "event-leads-90434.firebaseapp.com",
+    databaseURL: "https://event-leads-90434-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "event-leads-90434",
+    storageBucket: "event-leads-90434.firebasestorage.app",
+    messagingSenderId: "236202325874",
+    appId: "1:236202325874:web:d2546a4886e39ef96e4feb"
+  };
+
   let selectedEvent = '';
   let webhookUrl = '';
   let leads = [];
@@ -1918,26 +1925,6 @@
     dot.style.background = state === 'ok' ? 'var(--green)' : state === 'err' ? 'var(--red)' : 'var(--muted)';
     txt.style.color      = state === 'ok' ? 'var(--green)' : state === 'err' ? 'var(--red)' : 'var(--muted)';
     txt.textContent = msg;
-  }
-
-  async function connectFirebase() {
-    const raw = document.getElementById('firebaseConfig').value.trim();
-    if (!raw) { showToast('Paste your Firebase config JSON first', 'error'); return; }
-    setFirebaseStatus('', 'Connecting…');
-    if (!Firebase.init(raw)) {
-      setFirebaseStatus('err', 'Invalid config');
-      showToast('Firebase config error — check JSON', 'error');
-      return;
-    }
-    DB.saveFirebaseConfig(raw);
-    await pushLocalToFirebase();
-    await pullFromFirebase();
-    setupFirebaseListeners();
-    setFirebaseStatus('ok', 'Connected · live sync active');
-    showToast('Firebase connected — data synced ✓');
-    renderEventList();
-    renderAttendeeEventSelect();
-    populateDashEventSelect();
   }
 
   async function pushLocalToFirebase() {
@@ -2795,20 +2782,19 @@
     webhookUrl = DB.getWebhook();
     document.getElementById('webhookUrl').value = webhookUrl;
 
-    const savedFbConfig = DB.getFirebaseConfig();
-    if (savedFbConfig) {
-      document.getElementById('firebaseConfig').value = savedFbConfig;
-      if (Firebase.init(savedFbConfig)) {
-        setFirebaseStatus('ok', 'Connected · live sync active');
-        pullFromFirebase().then(() => {
-          setupFirebaseListeners();
-          renderEventList();
-          renderAttendeeEventSelect();
-          populateDashEventSelect();
-        });
-      } else {
-        setFirebaseStatus('err', 'Config error — reconnect in Settings');
-      }
+    setFirebaseStatus('', 'Connecting…');
+    if (Firebase.init(FIREBASE_CONFIG)) {
+      (async () => {
+        await pushLocalToFirebase();
+        await pullFromFirebase();
+        setupFirebaseListeners();
+        setFirebaseStatus('ok', 'Live sync active');
+        renderEventList();
+        renderAttendeeEventSelect();
+        populateDashEventSelect();
+      })();
+    } else {
+      setFirebaseStatus('err', 'Sync unavailable — data is local-only');
     }
 
     renderEventList();
