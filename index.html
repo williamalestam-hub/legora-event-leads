@@ -1471,7 +1471,7 @@
 <!-- LOGGING SCREEN -->
 <div id="logging" class="screen">
   <div class="logging-top">
-    <button class="btn-back" onclick="goTo('rep-events')">←</button>
+    <button class="btn-back" onclick="openRepEvents()">←</button>
     <div class="event-tag" id="activeEventTag">Event</div>
     <div class="count-badge"><span id="leadCount">0</span> logged</div>
     <button class="btn-icon" onclick="exportCSV()">Export</button>
@@ -1815,12 +1815,16 @@
       el.innerHTML = '<div class="empty-state">No events found. Ask your admin to add one.</div>';
     } else {
       el.innerHTML = events.map(e => {
-        const count = DB.getAttendees(e.id).length;
+        const attCount  = DB.getAttendees(e.id).length;
+        const leadCount = DB.getLeads(e.id).length;
+        const sub = leadCount
+          ? `${leadCount} lead${leadCount !== 1 ? 's' : ''} logged · ${attCount} attendee${attCount !== 1 ? 's' : ''}`
+          : `${attCount} attendee${attCount !== 1 ? 's' : ''}`;
         return `
           <div class="event-pick-card" data-eid="${e.id}" data-ename="${e.name.replace(/"/g,'&quot;')}" onclick="openRepLogging(this.dataset.eid, this.dataset.ename)">
             <div>
               <div class="event-pick-name">${e.name}</div>
-              <div class="event-pick-count">${count} attendee${count !== 1 ? 's' : ''}</div>
+              <div class="event-pick-count">${sub}</div>
             </div>
             <div class="event-pick-arrow">›</div>
           </div>`;
