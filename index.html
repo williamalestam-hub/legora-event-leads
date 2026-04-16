@@ -676,6 +676,317 @@
     margin: 24px 0;
   }
 
+  /* ─── REP EVENT PICKER ─── */
+  #rep-events {
+    flex-direction: column;
+  }
+
+  .rep-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .rep-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 20px;
+    max-width: 540px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .rep-body h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .rep-body .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .event-pick-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .event-pick-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .event-pick-card:hover  { border-color: var(--accent); background: var(--surface2); }
+  .event-pick-card:active { transform: scale(0.99); }
+
+  .event-pick-name  { font-size: 15px; font-weight: 600; color: var(--text); }
+  .event-pick-count { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .event-pick-arrow { font-size: 18px; color: var(--muted); }
+
+  /* ─── REP LOGGING SCREEN ─── */
+  .logging-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .logging-top .btn-back {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 6px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .logging-top .btn-back:hover { color: var(--text); }
+
+  .logging-top .event-tag {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .logging-top .count-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .logging-top .count-badge span { color: var(--text); }
+
+  .search-wrap {
+    padding: 12px 16px 0;
+    flex-shrink: 0;
+  }
+
+  .search-wrap input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 10px 16px;
+    font-size: 14px;
+    width: 100%;
+  }
+  .search-wrap input:focus { border-color: var(--accent); }
+
+  .att-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .att-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .att-card:hover  { border-color: var(--border2); background: var(--surface2); }
+  .att-card:active { transform: scale(0.99); }
+  .att-card.logged {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .att-avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    border: 1px solid rgba(245,244,238,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+    font-family: 'DM Mono', monospace;
+  }
+  .att-card.logged .att-avatar { background: rgba(74,222,128,0.12); border-color: rgba(74,222,128,0.3); color: #4ade80; }
+
+  .att-info { flex: 1; min-width: 0; }
+  .att-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .att-sub  { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .att-logged-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #4ade80;
+    background: rgba(74,222,128,0.1);
+    padding: 3px 8px;
+    border-radius: 99px;
+    flex-shrink: 0;
+  }
+
+  .walkin-btn {
+    margin: 10px 16px 24px;
+    width: calc(100% - 32px);
+    padding: 14px;
+    background: none;
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .walkin-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  /* ─── BOTTOM SHEET ─── */
+  .sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s;
+  }
+  .sheet-overlay.open { opacity: 1; pointer-events: all; }
+
+  .sheet {
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    border: 1px solid var(--border2);
+    border-bottom: none;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 8px 20px 36px;
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .sheet-overlay.open .sheet { transform: translateY(0); }
+
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--border2);
+    border-radius: 99px;
+    margin: 8px auto 20px;
+  }
+
+  .sheet-name {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .sheet-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .sheet-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .rating-big {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .rating-big-btn {
+    padding: 20px 8px;
+    border-radius: var(--radius);
+    border: 1.5px solid var(--border2);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+  }
+  .rating-big-btn .rbig-icon { font-size: 22px; }
+  .rating-big-btn:hover { border-color: var(--border2); color: var(--text); }
+  .rating-big-btn.sel-hot  { background: rgba(255,100,100,0.12); border-color: #ff6464; color: #ff6464; }
+  .rating-big-btn.sel-warm { background: rgba(245,166,35,0.12);  border-color: var(--amber); color: var(--amber); }
+  .rating-big-btn.sel-cold { background: rgba(122,154,132,0.15); border-color: var(--muted); color: var(--text); }
+
+  .sheet-notes {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 12px 14px;
+    outline: none;
+    resize: none;
+    min-height: 72px;
+    margin-bottom: 16px;
+    appearance: none;
+  }
+  .sheet-notes:focus { border-color: var(--accent); }
+  .sheet-notes::placeholder { color: var(--muted); }
+
+  .sheet-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 18px;
+    color: var(--text);
+  }
+
+  .sheet-form-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .sheet-field { margin-bottom: 10px; }
+
   /* ─── ROLE SELECT SCREEN ─── */
   #role-select {
     align-items: center;
@@ -886,7 +1197,7 @@
           <span class="role-btn-desc">Manage events, attendees &amp; settings</span>
         </div>
       </button>
-      <button class="role-btn" onclick="goTo('logging')">
+      <button class="role-btn" onclick="openRepEvents()">
         <div class="role-btn-icon">⚡</div>
         <div class="role-btn-text">
           <span class="role-btn-label">Sales Rep</span>
@@ -1023,6 +1334,26 @@
   </div>
 </div>
 
+<!-- REP EVENT PICKER -->
+<div id="rep-events" class="screen">
+  <div class="rep-top">
+    <div class="logo" style="margin:0;">
+      <svg class="logo-star" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M50 2C52 34,66 48,98 50C66 52,52 66,50 98C48 66,34 52,2 50C34 48,48 34,50 2Z" fill="currentColor"/>
+      </svg>
+      <span class="logo-wordmark">Legora</span>
+    </div>
+    <button class="btn-icon" onclick="goTo('role-select')">Exit</button>
+  </div>
+  <div class="rep-body">
+    <h2>Choose your event</h2>
+    <p class="subtitle">Tap to start logging leads</p>
+    <div class="event-pick-list" id="repEventList">
+      <div class="empty-state">No events found. Ask your admin to add one.</div>
+    </div>
+  </div>
+</div>
+
 <!-- INSTRUCTIONS SCREEN -->
 <div id="instructions" class="screen">
   <div class="instr-card">
@@ -1090,67 +1421,84 @@
 
 <!-- LOGGING SCREEN -->
 <div id="logging" class="screen">
-  <div class="top-bar">
-    <div class="event-tag" id="activeEventTag">Event name</div>
-    <div class="count-badge"><span id="leadCount">0</span> leads</div>
-    <div class="top-bar-actions">
-      <button class="btn-icon" onclick="exportCSV()">Export CSV</button>
-    </div>
+  <div class="logging-top">
+    <button class="btn-back" onclick="goTo('rep-events')">←</button>
+    <div class="event-tag" id="activeEventTag">Event</div>
+    <div class="count-badge"><span id="leadCount">0</span> logged</div>
+    <button class="btn-icon" onclick="exportCSV()">Export</button>
   </div>
-
-  <div class="main-content">
-
-    <!-- Form -->
-    <div class="form-grid">
-      <div>
-        <label>First name *</label>
-        <input type="text" id="firstName" placeholder="Anna" />
-      </div>
-      <div>
-        <label>Last name *</label>
-        <input type="text" id="lastName" placeholder="Svensson" />
-      </div>
-      <div>
-        <label>Email *</label>
-        <input type="email" id="email" placeholder="anna@firm.com" class="full" />
-      </div>
-      <div>
-        <label>Company</label>
-        <input type="text" id="company" placeholder="Law firm name" />
-      </div>
-      <div>
-        <label>Job title</label>
-        <input type="text" id="jobTitle" placeholder="Partner" />
-      </div>
-      <div>
-        <label># of lawyers</label>
-        <input type="number" id="lawyers" placeholder="50" min="1" />
-      </div>
-      <div>
-        <label>Phone</label>
-        <input type="tel" id="phone" placeholder="+46 70 000 0000" />
-      </div>
-      <div>
-        <label>Lead quality</label>
-        <div class="rating-row">
-          <button class="rating-btn" data-rating="Hot" onclick="setRating(this)">🔥 Hot</button>
-          <button class="rating-btn" data-rating="Warm" onclick="setRating(this)">☀️ Warm</button>
-          <button class="rating-btn" data-rating="Cold" onclick="setRating(this)">❄️ Cold</button>
-        </div>
-      </div>
-      <div class="full">
-        <label>Notes</label>
-        <textarea id="notes" placeholder="What did you talk about? Any follow-up actions?"></textarea>
-      </div>
-    </div>
-
-    <button class="btn-submit" id="submitBtn" onclick="submitLead()">
-      <div class="spinner" id="spinner"></div>
-      <span id="submitLabel">Log lead</span>
-    </button>
-
+  <div class="search-wrap">
+    <input type="search" id="attSearch" placeholder="Search attendees..." oninput="filterAttendees()" autocomplete="off" />
+  </div>
+  <div class="att-list" id="attList">
+    <div class="empty-state">No attendees loaded.</div>
+  </div>
+  <button class="walkin-btn" onclick="openWalkIn()">+ Add walk-in</button>
+  <div class="main-content" style="padding-top:0;">
     <div class="section-title" id="listTitle" style="display:none;">Logged today</div>
     <div class="lead-list" id="leadList"></div>
+  </div>
+</div>
+
+<!-- QUICK-LOG SHEET -->
+<div class="sheet-overlay" id="sheet-quicklog" onclick="closeSheet(event,'sheet-quicklog')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-name" id="sheetName">Name</div>
+    <div class="sheet-sub" id="sheetSub">Company</div>
+    <div class="sheet-label">Lead quality</div>
+    <div class="rating-big">
+      <button class="rating-big-btn" onclick="sheetRating('Hot')">
+        <span class="rbig-icon">🔥</span>Hot
+      </button>
+      <button class="rating-big-btn" onclick="sheetRating('Warm')">
+        <span class="rbig-icon">☀️</span>Warm
+      </button>
+      <button class="rating-big-btn" onclick="sheetRating('Cold')">
+        <span class="rbig-icon">❄️</span>Cold
+      </button>
+    </div>
+    <textarea class="sheet-notes" id="sheetNotes" placeholder="Notes (optional)…" rows="3"></textarea>
+    <button class="btn-primary" id="sheetSubmitBtn" onclick="submitQuickLog()">
+      <span id="sheetSubmitLabel">Log lead</span>
+    </button>
+  </div>
+</div>
+
+<!-- WALK-IN SHEET -->
+<div class="sheet-overlay" id="sheet-walkin" onclick="closeSheet(event,'sheet-walkin')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Walk-in lead</div>
+    <div class="sheet-form-2col">
+      <input type="text"  id="wiFirst"   placeholder="First name *" class="sheet-field" />
+      <input type="text"  id="wiLast"    placeholder="Last name *"  class="sheet-field" />
+    </div>
+    <input type="email" id="wiEmail"   placeholder="Email *"   class="sheet-field" style="width:100%;margin-bottom:10px;" />
+    <div class="sheet-form-2col">
+      <input type="text"   id="wiCompany" placeholder="Company"  class="sheet-field" />
+      <input type="text"   id="wiTitle"   placeholder="Job title" class="sheet-field" />
+    </div>
+    <div class="sheet-form-2col">
+      <input type="number" id="wiLawyers" placeholder="# Lawyers" class="sheet-field" min="1" />
+      <input type="tel"    id="wiPhone"   placeholder="Phone"     class="sheet-field" />
+    </div>
+    <div class="sheet-label" style="margin-top:8px;">Lead quality</div>
+    <div class="rating-big" style="margin-bottom:14px;">
+      <button class="rating-big-btn" onclick="wiRating('Hot')">
+        <span class="rbig-icon">🔥</span>Hot
+      </button>
+      <button class="rating-big-btn" onclick="wiRating('Warm')">
+        <span class="rbig-icon">☀️</span>Warm
+      </button>
+      <button class="rating-big-btn" onclick="wiRating('Cold')">
+        <span class="rbig-icon">❄️</span>Cold
+      </button>
+    </div>
+    <textarea class="sheet-notes" id="wiNotes" placeholder="Notes (optional)…" rows="3"></textarea>
+    <button class="btn-primary" id="wiSubmitBtn" onclick="submitWalkIn()">
+      <span id="wiSubmitLabel">Log lead</span>
+    </button>
   </div>
 </div>
 
@@ -1394,81 +1742,206 @@
   function showInstructions() { goTo('instructions'); }
   function showSetup()         { goTo('setup'); }
 
-  // ─── FORM ───
-  function setRating(btn) {
-    document.querySelectorAll('.rating-btn').forEach(b => {
-      b.className = 'rating-btn';
-    });
-    selectedRating = btn.dataset.rating;
-    const map = { Hot: 'selected-hot', Warm: 'selected-warm', Cold: 'selected-cold' };
-    btn.classList.add(map[selectedRating]);
+  // ─── REP — EVENT PICKER ───
+  let selectedEventId = '';
+  let repAttendees = [];
+  let loggedIds = new Set();
+
+  function openRepEvents() {
+    const events = DB.getEvents();
+    const el = document.getElementById('repEventList');
+    if (!events.length) {
+      el.innerHTML = '<div class="empty-state">No events found. Ask your admin to add one.</div>';
+    } else {
+      el.innerHTML = events.map(e => {
+        const count = DB.getAttendees(e.id).length;
+        return `
+          <div class="event-pick-card" onclick="openRepLogging('${e.id}', ${JSON.stringify(e.name)})">
+            <div>
+              <div class="event-pick-name">${e.name}</div>
+              <div class="event-pick-count">${count} attendee${count !== 1 ? 's' : ''}</div>
+            </div>
+            <div class="event-pick-arrow">›</div>
+          </div>`;
+      }).join('');
+    }
+    goTo('rep-events');
   }
 
-  async function submitLead() {
-    const firstName = document.getElementById('firstName').value.trim();
-    const lastName = document.getElementById('lastName').value.trim();
-    const email = document.getElementById('email').value.trim();
+  function openRepLogging(eventId, eventName) {
+    selectedEvent   = eventName;
+    selectedEventId = eventId;
+    leads = [];
+    loggedIds = new Set();
+    repAttendees = DB.getAttendees(eventId);
+    document.getElementById('activeEventTag').textContent = eventName;
+    document.getElementById('leadCount').textContent = '0';
+    document.getElementById('leadList').innerHTML = '';
+    document.getElementById('listTitle').style.display = 'none';
+    document.getElementById('attSearch').value = '';
+    renderAttList(repAttendees);
+    goTo('logging');
+  }
 
+  function renderAttList(list) {
+    const el = document.getElementById('attList');
+    if (!list.length) {
+      el.innerHTML = '<div class="empty-state">No attendees — use "Add walk-in" below.</div>';
+      return;
+    }
+    el.innerHTML = list.map(a => {
+      const initials = ((a.firstName[0] || '') + (a.lastName[0] || '')).toUpperCase();
+      const sub = [a.company, a.jobTitle].filter(Boolean).join(' · ');
+      const done = loggedIds.has(a.id);
+      return `
+        <div class="att-card${done ? ' logged' : ''}" onclick="openQuickLog(${JSON.stringify(a)})">
+          <div class="att-avatar">${done ? '✓' : initials}</div>
+          <div class="att-info">
+            <div class="att-name">${a.firstName} ${a.lastName}</div>
+            ${sub ? `<div class="att-sub">${sub}</div>` : ''}
+          </div>
+          ${done ? '<span class="att-logged-badge">Logged</span>' : ''}
+        </div>`;
+    }).join('');
+  }
+
+  function filterAttendees() {
+    const q = document.getElementById('attSearch').value.toLowerCase();
+    const filtered = q
+      ? repAttendees.filter(a =>
+          `${a.firstName} ${a.lastName} ${a.company} ${a.jobTitle}`.toLowerCase().includes(q))
+      : repAttendees;
+    renderAttList(filtered);
+  }
+
+  // ─── QUICK-LOG SHEET ───
+  let sheetRatingVal = '';
+  let activeAttendee = null;
+
+  function openQuickLog(att) {
+    activeAttendee = att;
+    sheetRatingVal = '';
+    document.getElementById('sheetName').textContent = `${att.firstName} ${att.lastName}`;
+    document.getElementById('sheetSub').textContent  = [att.company, att.jobTitle].filter(Boolean).join(' · ') || '—';
+    document.getElementById('sheetNotes').value = '';
+    document.querySelectorAll('#sheet-quicklog .rating-big-btn').forEach(b => b.className = 'rating-big-btn');
+    document.getElementById('sheetSubmitBtn').disabled = false;
+    document.getElementById('sheetSubmitLabel').textContent = 'Log lead';
+    document.getElementById('sheet-quicklog').classList.add('open');
+  }
+
+  function sheetRating(val) {
+    sheetRatingVal = val;
+    const map = { Hot: 'sel-hot', Warm: 'sel-warm', Cold: 'sel-cold' };
+    document.querySelectorAll('#sheet-quicklog .rating-big-btn').forEach(b => {
+      b.className = 'rating-big-btn' + (b.textContent.trim().startsWith(val) ? ' ' + map[val] : '');
+    });
+  }
+
+  async function submitQuickLog() {
+    if (!activeAttendee) return;
+    const lead = {
+      timestamp: new Date().toISOString(),
+      event: selectedEvent,
+      firstName: activeAttendee.firstName,
+      lastName:  activeAttendee.lastName,
+      email:     activeAttendee.email    || '',
+      company:   activeAttendee.company  || '',
+      jobTitle:  activeAttendee.jobTitle || '',
+      lawyers:   '',
+      phone:     '',
+      rating:    sheetRatingVal,
+      notes:     document.getElementById('sheetNotes').value.trim(),
+    };
+    const btn   = document.getElementById('sheetSubmitBtn');
+    const label = document.getElementById('sheetSubmitLabel');
+    btn.disabled = true;
+    label.textContent = 'Syncing…';
+    const status = await postLead(lead);
+    lead._syncStatus = status;
+    leads.push(lead);
+    loggedIds.add(activeAttendee.id);
+    document.getElementById('leadCount').textContent = leads.length;
+    renderLead(lead);
+    filterAttendees();
+    closeSheet(null, 'sheet-quicklog');
+    showToast(`${lead.firstName} ${lead.lastName} logged ✓`);
+  }
+
+  // ─── WALK-IN SHEET ───
+  let wiRatingVal = '';
+
+  function openWalkIn() {
+    wiRatingVal = '';
+    ['wiFirst','wiLast','wiEmail','wiCompany','wiTitle','wiLawyers','wiPhone','wiNotes'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.querySelectorAll('#sheet-walkin .rating-big-btn').forEach(b => b.className = 'rating-big-btn');
+    document.getElementById('wiSubmitBtn').disabled = false;
+    document.getElementById('wiSubmitLabel').textContent = 'Log lead';
+    document.getElementById('sheet-walkin').classList.add('open');
+    setTimeout(() => document.getElementById('wiFirst').focus(), 300);
+  }
+
+  function wiRating(val) {
+    wiRatingVal = val;
+    const map = { Hot: 'sel-hot', Warm: 'sel-warm', Cold: 'sel-cold' };
+    document.querySelectorAll('#sheet-walkin .rating-big-btn').forEach(b => {
+      b.className = 'rating-big-btn' + (b.textContent.trim().startsWith(val) ? ' ' + map[val] : '');
+    });
+  }
+
+  async function submitWalkIn() {
+    const firstName = document.getElementById('wiFirst').value.trim();
+    const lastName  = document.getElementById('wiLast').value.trim();
+    const email     = document.getElementById('wiEmail').value.trim();
     if (!firstName || !lastName || !email) {
       showToast('First name, last name and email are required', 'error');
       return;
     }
-
     const lead = {
       timestamp: new Date().toISOString(),
-      event: selectedEvent,
-      firstName,
-      lastName,
-      email,
-      company: document.getElementById('company').value.trim(),
-      jobTitle: document.getElementById('jobTitle').value.trim(),
-      lawyers: document.getElementById('lawyers').value.trim(),
-      phone: document.getElementById('phone').value.trim(),
-      rating: selectedRating,
-      notes: document.getElementById('notes').value.trim()
+      event:     selectedEvent,
+      firstName, lastName, email,
+      company:   document.getElementById('wiCompany').value.trim(),
+      jobTitle:  document.getElementById('wiTitle').value.trim(),
+      lawyers:   document.getElementById('wiLawyers').value.trim(),
+      phone:     document.getElementById('wiPhone').value.trim(),
+      rating:    wiRatingVal,
+      notes:     document.getElementById('wiNotes').value.trim(),
     };
+    const btn   = document.getElementById('wiSubmitBtn');
+    const label = document.getElementById('wiSubmitLabel');
+    btn.disabled = true;
+    label.textContent = 'Syncing…';
+    const status = await postLead(lead);
+    lead._syncStatus = status;
+    leads.push(lead);
+    document.getElementById('leadCount').textContent = leads.length;
+    renderLead(lead);
+    closeSheet(null, 'sheet-walkin');
+    showToast(`${firstName} ${lastName} logged ✓`);
+  }
 
-    // UI loading state
-    const btn = document.getElementById('submitBtn');
-    const spinner = document.getElementById('spinner');
-    const label = document.getElementById('submitLabel');
-    btn.classList.add('loading');
-    spinner.style.display = 'block';
-    label.textContent = 'Syncing...';
-
-    let syncStatus = 'pending';
+  // ─── SHARED SUBMIT / RENDER ───
+  async function postLead(lead) {
+    if (!webhookUrl) return 'fail';
     try {
       await fetch(webhookUrl, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(lead)
+        body: JSON.stringify(lead),
       });
-      syncStatus = 'ok';
-      showToast(`${firstName} ${lastName} logged ✓`, 'success');
-    } catch (err) {
-      syncStatus = 'fail';
-      showToast('Saved locally — sync failed. Will retry on export.', 'error');
+      return 'ok';
+    } catch {
+      return 'fail';
     }
-
-    lead._syncStatus = syncStatus;
-    leads.push(lead);
-    renderLead(lead);
-    document.getElementById('leadCount').textContent = leads.length;
-    clearForm();
-
-    btn.classList.remove('loading');
-    spinner.style.display = 'none';
-    label.textContent = 'Log lead';
   }
 
-  function clearForm() {
-    ['firstName','lastName','email','company','jobTitle','lawyers','phone','notes'].forEach(id => {
-      document.getElementById(id).value = '';
-    });
-    selectedRating = '';
-    document.querySelectorAll('.rating-btn').forEach(b => b.className = 'rating-btn');
-    document.getElementById('firstName').focus();
+  function closeSheet(e, id) {
+    if (e && e.target !== document.getElementById(id)) return;
+    document.getElementById(id).classList.remove('open');
   }
 
   function renderLead(lead) {
