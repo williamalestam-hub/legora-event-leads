@@ -1428,7 +1428,7 @@
     <button class="btn-icon" onclick="exportCSV()">Export</button>
   </div>
   <div class="search-wrap">
-    <input type="search" id="attSearch" placeholder="Search attendees..." oninput="filterAttendees()" autocomplete="off" />
+    <input type="search" id="attSearch" placeholder="Search attendees..." autocomplete="off" />
   </div>
   <div class="att-list" id="attList">
     <div class="empty-state">No attendees loaded.</div>
@@ -1573,6 +1573,8 @@
     saveAttendees(id, arr) { localStorage.setItem('lg_att_' + id, JSON.stringify(arr)); },
     getWebhook()           { return localStorage.getItem('lg_webhook') || ''; },
     saveWebhook(url)       { localStorage.setItem('lg_webhook', url); },
+    getLeads(eventId)      { return JSON.parse(localStorage.getItem('lg_leads_' + eventId) || '[]'); },
+    saveLeads(eventId, arr){ localStorage.setItem('lg_leads_' + eventId, JSON.stringify(arr)); },
   };
 
   // ─── ADMIN — TABS ───
@@ -1771,13 +1773,14 @@
   function openRepLogging(eventId, eventName) {
     selectedEvent   = eventName;
     selectedEventId = eventId;
-    leads = [];
-    loggedIds = new Set();
     repAttendees = DB.getAttendees(eventId);
+    leads = DB.getLeads(eventId);
+    loggedIds = new Set(leads.filter(l => l._attendeeId).map(l => l._attendeeId));
     document.getElementById('activeEventTag').textContent = eventName;
-    document.getElementById('leadCount').textContent = '0';
+    document.getElementById('leadCount').textContent = leads.length || '0';
     document.getElementById('leadList').innerHTML = '';
-    document.getElementById('listTitle').style.display = 'none';
+    document.getElementById('listTitle').style.display = leads.length ? '' : 'none';
+    leads.forEach(l => renderLead(l));
     document.getElementById('attSearch').value = '';
     renderAttList(repAttendees);
     goTo('logging');
@@ -1836,7 +1839,7 @@
     sheetRatingVal = val;
     const map = { Hot: 'sel-hot', Warm: 'sel-warm', Cold: 'sel-cold' };
     document.querySelectorAll('#sheet-quicklog .rating-big-btn').forEach(b => {
-      b.className = 'rating-big-btn' + (b.textContent.trim().startsWith(val) ? ' ' + map[val] : '');
+      b.className = 'rating-big-btn' + (b.textContent.includes(val) ? ' ' + map[val] : '');
     });
   }
 
@@ -1854,6 +1857,7 @@
       phone:     '',
       rating:    sheetRatingVal,
       notes:     document.getElementById('sheetNotes').value.trim(),
+      _attendeeId: activeAttendee.id,
     };
     const btn   = document.getElementById('sheetSubmitBtn');
     const label = document.getElementById('sheetSubmitLabel');
@@ -1862,6 +1866,7 @@
     const status = await postLead(lead);
     lead._syncStatus = status;
     leads.push(lead);
+    DB.saveLeads(selectedEventId, leads);
     loggedIds.add(activeAttendee.id);
     document.getElementById('leadCount').textContent = leads.length;
     renderLead(lead);
@@ -1893,7 +1898,7 @@
     wiRatingVal = val;
     const map = { Hot: 'sel-hot', Warm: 'sel-warm', Cold: 'sel-cold' };
     document.querySelectorAll('#sheet-walkin .rating-big-btn').forEach(b => {
-      b.className = 'rating-big-btn' + (b.textContent.trim().startsWith(val) ? ' ' + map[val] : '');
+      b.className = 'rating-big-btn' + (b.textContent.includes(val) ? ' ' + map[val] : '');
     });
   }
 
@@ -1923,6 +1928,7 @@
     const status = await postLead(lead);
     lead._syncStatus = status;
     leads.push(lead);
+    DB.saveLeads(selectedEventId, leads);
     document.getElementById('leadCount').textContent = leads.length;
     renderLead(lead);
     closeSheet(null, 'sheet-walkin');
@@ -2014,6 +2020,7 @@
     document.getElementById('webhookUrl').value = webhookUrl;
     renderEventList();
     renderAttendeeEventSelect();
+    document.getElementById('attSearch').addEventListener('input', filterAttendees);
   })();
 </script>
 </body>
