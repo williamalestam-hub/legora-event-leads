@@ -1794,7 +1794,7 @@
       const sub = [a.company, a.jobTitle].filter(Boolean).join(' · ');
       const done = loggedIds.has(a.id);
       return `
-        <div class="att-card${done ? ' logged' : ''}" onclick="openQuickLog(${JSON.stringify(a)})">
+        <div class="att-card${done ? ' logged' : ''}" data-aid="${a.id}" onclick="openQuickLog(this.dataset.aid)">
           <div class="att-avatar">${done ? '✓' : initials}</div>
           <div class="att-info">
             <div class="att-name">${a.firstName} ${a.lastName}</div>
@@ -1818,7 +1818,9 @@
   let sheetRatingVal = '';
   let activeAttendee = null;
 
-  function openQuickLog(att) {
+  function openQuickLog(attId) {
+    const att = repAttendees.find(a => a.id === attId);
+    if (!att) return;
     activeAttendee = att;
     sheetRatingVal = '';
     document.getElementById('sheetName').textContent = `${att.firstName} ${att.lastName}`;
