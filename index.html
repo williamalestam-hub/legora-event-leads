@@ -1756,7 +1756,7 @@
       el.innerHTML = events.map(e => {
         const count = DB.getAttendees(e.id).length;
         return `
-          <div class="event-pick-card" onclick="openRepLogging('${e.id}', ${JSON.stringify(e.name)})">
+          <div class="event-pick-card" data-eid="${e.id}" data-ename="${e.name.replace(/"/g,'&quot;')}" onclick="openRepLogging(this.dataset.eid, this.dataset.ename)">
             <div>
               <div class="event-pick-name">${e.name}</div>
               <div class="event-pick-count">${count} attendee${count !== 1 ? 's' : ''}</div>
