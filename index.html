@@ -518,47 +518,508 @@
     padding: 0;
   }
   .back-link:hover { color: var(--text); }
+
+  /* ─── ADMIN PANEL ─── */
+  #setup {
+    flex-direction: column;
+  }
+
+  .admin-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .admin-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg);
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 14px 8px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: -1px;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  .admin-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    max-width: 580px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .admin-section {
+    margin-bottom: 28px;
+  }
+
+  .admin-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .input-row input { flex: 1; }
+
+  .btn-add-sm {
+    padding: 12px 18px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-add-sm:hover { opacity: 0.88; }
+
+  .item-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .list-item-main { flex: 1; min-width: 0; }
+  .list-item-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .list-item-sub  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .btn-delete {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .btn-delete:hover { color: var(--red); background: rgba(255,100,100,0.1); }
+
+  .upload-area {
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .upload-area:hover { border-color: var(--accent); color: var(--text); }
+  .upload-area .upload-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+
+  .hint-text {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+
+  .form-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 24px 0;
+  }
+
+  /* ─── ROLE SELECT SCREEN ─── */
+  #role-select {
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+
+  .role-card {
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+  }
+
+  .role-card .logo {
+    justify-content: center;
+    margin-bottom: 3rem;
+  }
+
+  .role-card h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .role-card .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 2.5rem;
+  }
+
+  .role-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .role-btn {
+    width: 100%;
+    padding: 18px 20px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.15s;
+  }
+
+  .role-btn:hover {
+    background: var(--surface2);
+    border-color: var(--accent);
+  }
+
+  .role-btn-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--accent-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .role-btn-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .role-btn-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .role-btn-desc {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ─── PIN SCREEN ─── */
+  #pin-entry {
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+
+  .pin-card {
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+  }
+
+  .pin-card .logo {
+    justify-content: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .pin-card h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .pin-card .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 2rem;
+  }
+
+  .pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 2rem;
+  }
+
+  .pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border2);
+    transition: all 0.15s;
+  }
+
+  .pin-dot.filled {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .pin-dot.error {
+    background: var(--red);
+    border-color: var(--red);
+  }
+
+  .pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+
+  .pin-key {
+    padding: 18px 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.1s;
+    user-select: none;
+  }
+
+  .pin-key:hover  { background: var(--surface2); }
+  .pin-key:active { transform: scale(0.95); background: var(--surface2); }
+  .pin-key.pin-back { font-size: 16px; color: var(--muted); }
+  .pin-key.pin-empty { border-color: transparent; background: transparent; pointer-events: none; }
+
+  .pin-error-msg {
+    font-size: 13px;
+    color: var(--red);
+    min-height: 20px;
+    margin-top: 4px;
+  }
+
+  .pin-back-link {
+    margin-top: 1.5rem;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    text-decoration: underline;
+  }
+  .pin-back-link:hover { color: var(--text); }
 </style>
 </head>
 <body>
 
-<!-- SETUP SCREEN -->
-<div id="setup" class="screen active">
-  <div class="setup-card">
+<!-- ROLE SELECT SCREEN -->
+<div id="role-select" class="screen active">
+  <div class="role-card">
     <div class="logo">
       <svg class="logo-star" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M50 2C52 34,66 48,98 50C66 52,52 66,50 98C48 66,34 52,2 50C34 48,48 34,50 2Z" fill="currentColor"/>
       </svg>
       <span class="logo-wordmark">Legora</span>
     </div>
-    <h1>Event lead logger</h1>
-    <p class="subtitle">Log leads on-site. They sync straight to your Google Sheet.</p>
+    <h1>Event lead capture</h1>
+    <p class="subtitle">Who are you?</p>
+    <div class="role-buttons">
+      <button class="role-btn" onclick="openAdminPin()">
+        <div class="role-btn-icon">⚙️</div>
+        <div class="role-btn-text">
+          <span class="role-btn-label">Admin</span>
+          <span class="role-btn-desc">Manage events, attendees &amp; settings</span>
+        </div>
+      </button>
+      <button class="role-btn" onclick="goTo('logging')">
+        <div class="role-btn-icon">⚡</div>
+        <div class="role-btn-text">
+          <span class="role-btn-label">Sales Rep</span>
+          <span class="role-btn-desc">Log leads on-site at an event</span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
 
-    <div class="field-group">
-      <label>Select event</label>
-      <div class="event-chips" id="eventChips">
-        <div class="chip" data-value="Presidenten">Presidenten</div>
-        <div class="chip" data-value="Germany (TBD)">Germany event</div>
-        <div class="chip" data-value="Her Counsel">Her Counsel</div>
-        <div class="chip" data-value="Golf Partnership">Golf Partnership</div>
+<!-- PIN ENTRY SCREEN -->
+<div id="pin-entry" class="screen">
+  <div class="pin-card">
+    <div class="logo">
+      <svg class="logo-star" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M50 2C52 34,66 48,98 50C66 52,52 66,50 98C48 66,34 52,2 50C34 48,48 34,50 2Z" fill="currentColor"/>
+      </svg>
+      <span class="logo-wordmark">Legora</span>
+    </div>
+    <h2>Admin access</h2>
+    <p class="subtitle">Enter your PIN to continue</p>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+    </div>
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key pin-empty" disabled></button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key pin-back" onclick="pinBackspace()">⌫</button>
+    </div>
+    <div class="pin-error-msg" id="pinError"></div>
+    <button class="pin-back-link" onclick="goTo('role-select')">← Back</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="setup" class="screen">
+  <div class="admin-top">
+    <div class="logo" style="margin:0;">
+      <svg class="logo-star" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M50 2C52 34,66 48,98 50C66 52,52 66,50 98C48 66,34 52,2 50C34 48,48 34,50 2Z" fill="currentColor"/>
+      </svg>
+      <span class="logo-wordmark">Admin</span>
+    </div>
+    <button class="btn-icon" onclick="goTo('role-select')">Exit</button>
+  </div>
+
+  <div class="admin-tabs">
+    <button class="tab-btn active" onclick="switchTab('events')">Events</button>
+    <button class="tab-btn" onclick="switchTab('attendees')">Attendees</button>
+    <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+  </div>
+
+  <div class="admin-body">
+
+    <!-- EVENTS TAB -->
+    <div id="tab-events" class="tab-pane active">
+      <div class="admin-section">
+        <div class="admin-section-title">New event</div>
+        <div class="input-row">
+          <input type="text" id="newEventName" placeholder="e.g. Presidenten 2025" />
+          <button class="btn-add-sm" onclick="adminAddEvent()">Add</button>
+        </div>
       </div>
-      <div class="custom-event-row">
-        <input type="text" id="customEventInput" placeholder="Add custom event..." />
-        <button class="btn-add" onclick="addCustomEvent()">+ Add</button>
+      <div class="admin-section">
+        <div class="admin-section-title">Events</div>
+        <div class="item-list" id="eventList">
+          <div class="empty-state">No events yet. Add one above.</div>
+        </div>
       </div>
     </div>
 
-    <div class="field-group">
-      <label>Google Sheet webhook URL</label>
-      <div class="webhook-row">
+    <!-- ATTENDEES TAB -->
+    <div id="tab-attendees" class="tab-pane">
+      <div class="admin-section">
+        <div class="admin-section-title">Select event</div>
+        <select id="attendeeEventSelect" onchange="loadAttendeeList()">
+          <option value="">— choose an event —</option>
+        </select>
+      </div>
+      <div id="attendee-tools" style="display:none;">
+        <div class="admin-section">
+          <div class="admin-section-title">Upload CSV</div>
+          <div class="upload-area" onclick="document.getElementById('csvInput').click()">
+            <span class="upload-icon">📄</span>
+            Tap to upload attendee CSV
+          </div>
+          <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleCSV(this)" />
+          <p class="hint-text">Columns detected: <strong>First Name, Last Name, Email, Company, Job Title</strong> (order doesn't matter)</p>
+        </div>
+        <div class="admin-section">
+          <div class="admin-section-title">Add manually</div>
+          <div class="form-2col">
+            <input type="text" id="attFirst" placeholder="First name" />
+            <input type="text" id="attLast" placeholder="Last name" />
+          </div>
+          <input type="email" id="attEmail" placeholder="Email" style="margin-bottom:10px;" />
+          <div class="form-2col">
+            <input type="text" id="attCompany" placeholder="Company" />
+            <input type="text" id="attTitle" placeholder="Job title" />
+          </div>
+          <button class="btn-add-sm" style="width:100%;margin-top:4px;" onclick="adminAddAttendee()">Add attendee</button>
+        </div>
+        <div class="admin-section">
+          <div class="admin-section-title">Attendee list (<span id="attCount">0</span>)</div>
+          <div class="item-list" id="attendeeList">
+            <div class="empty-state">No attendees yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div id="tab-settings" class="tab-pane">
+      <div class="admin-section">
+        <div class="admin-section-title">Google Sheets webhook URL</div>
         <input type="url" id="webhookUrl" placeholder="https://script.google.com/macros/s/..." />
+        <p class="hint-text">No webhook? <button class="back-link" onclick="showInstructions()">See 2-min setup guide →</button></p>
       </div>
-      <p class="webhook-hint">
-        No webhook yet? <button class="back-link" onclick="showInstructions()">See 2-min setup guide →</button>
-      </p>
+      <button class="btn-primary" onclick="saveSettings()" style="margin-top:4px;">Save settings</button>
     </div>
 
-    <button class="btn-primary" id="startBtn" onclick="startSession()" disabled>Start logging</button>
   </div>
 </div>
 
@@ -623,7 +1084,7 @@
       <p>That's it. Paste the URL into the webhook field and start logging.</p>
     </div>
 
-    <button class="btn-primary" onclick="showSetup()">← Back to setup</button>
+    <button class="btn-primary" onclick="goTo('setup'); switchTab('settings')">← Back to settings</button>
   </div>
 </div>
 
@@ -702,58 +1163,236 @@
   let leads = [];
   let selectedRating = '';
 
-  // ─── SETUP ───
-  document.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
-      chip.classList.add('selected');
-      selectedEvent = chip.dataset.value;
-      updateStartBtn();
+  // ─── NAVIGATION ───
+  function goTo(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  // ─── PIN ───
+  const ADMIN_PIN = '8889';
+  let pinBuffer = '';
+
+  function openAdminPin() {
+    pinBuffer = '';
+    updatePinDots();
+    document.getElementById('pinError').textContent = '';
+    goTo('pin-entry');
+  }
+
+  function pinKey(digit) {
+    if (pinBuffer.length >= 4) return;
+    pinBuffer += digit;
+    updatePinDots();
+    if (pinBuffer.length === 4) checkPin();
+  }
+
+  function pinBackspace() {
+    pinBuffer = pinBuffer.slice(0, -1);
+    updatePinDots();
+    document.getElementById('pinError').textContent = '';
+  }
+
+  function updatePinDots() {
+    document.querySelectorAll('.pin-dot').forEach((dot, i) => {
+      dot.classList.toggle('filled', i < pinBuffer.length);
+      dot.classList.remove('error');
     });
-  });
-
-  document.getElementById('webhookUrl').addEventListener('input', updateStartBtn);
-
-  function updateStartBtn() {
-    const btn = document.getElementById('startBtn');
-    btn.disabled = !(selectedEvent && document.getElementById('webhookUrl').value.trim());
   }
 
-  function addCustomEvent() {
-    const val = document.getElementById('customEventInput').value.trim();
-    if (!val) return;
-    const chips = document.getElementById('eventChips');
-    const chip = document.createElement('div');
-    chip.className = 'chip';
-    chip.dataset.value = val;
-    chip.textContent = val;
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
-      chip.classList.add('selected');
-      selectedEvent = val;
-      updateStartBtn();
+  function checkPin() {
+    if (pinBuffer === ADMIN_PIN) {
+      goTo('setup');
+    } else {
+      document.querySelectorAll('.pin-dot').forEach(d => {
+        d.classList.remove('filled');
+        d.classList.add('error');
+      });
+      document.getElementById('pinError').textContent = 'Incorrect PIN. Try again.';
+      setTimeout(() => {
+        pinBuffer = '';
+        updatePinDots();
+      }, 800);
+    }
+  }
+
+  // ─── DB (localStorage) ───
+  const DB = {
+    getEvents()            { return JSON.parse(localStorage.getItem('lg_events') || '[]'); },
+    saveEvents(arr)        { localStorage.setItem('lg_events', JSON.stringify(arr)); },
+    getAttendees(eventId)  { return JSON.parse(localStorage.getItem('lg_att_' + eventId) || '[]'); },
+    saveAttendees(id, arr) { localStorage.setItem('lg_att_' + id, JSON.stringify(arr)); },
+    getWebhook()           { return localStorage.getItem('lg_webhook') || ''; },
+    saveWebhook(url)       { localStorage.setItem('lg_webhook', url); },
+  };
+
+  // ─── ADMIN — TABS ───
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', b.textContent.toLowerCase() === name);
     });
-    chips.appendChild(chip);
-    chip.click();
-    document.getElementById('customEventInput').value = '';
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
   }
 
-  function showInstructions() {
-    document.getElementById('setup').classList.remove('active');
-    document.getElementById('instructions').classList.add('active');
+  // ─── ADMIN — EVENTS ───
+  function adminAddEvent() {
+    const name = document.getElementById('newEventName').value.trim();
+    if (!name) return;
+    const events = DB.getEvents();
+    events.push({ id: Date.now().toString(), name });
+    DB.saveEvents(events);
+    document.getElementById('newEventName').value = '';
+    renderEventList();
+    renderAttendeeEventSelect();
+    showToast('Event added');
   }
 
-  function showSetup() {
-    document.getElementById('instructions').classList.remove('active');
-    document.getElementById('setup').classList.add('active');
+  function adminDeleteEvent(id) {
+    const events = DB.getEvents().filter(e => e.id !== id);
+    DB.saveEvents(events);
+    renderEventList();
+    renderAttendeeEventSelect();
   }
 
-  function startSession() {
-    webhookUrl = document.getElementById('webhookUrl').value.trim();
-    document.getElementById('activeEventTag').textContent = selectedEvent;
-    document.getElementById('setup').classList.remove('active');
-    document.getElementById('logging').classList.add('active');
+  function renderEventList() {
+    const events = DB.getEvents();
+    const el = document.getElementById('eventList');
+    if (!events.length) {
+      el.innerHTML = '<div class="empty-state">No events yet. Add one above.</div>';
+      return;
+    }
+    el.innerHTML = events.map(e => {
+      const atts = DB.getAttendees(e.id).length;
+      return `
+        <div class="list-item">
+          <div class="list-item-main">
+            <div class="list-item-name">${e.name}</div>
+            <div class="list-item-sub">${atts} attendee${atts !== 1 ? 's' : ''}</div>
+          </div>
+          <button class="btn-delete" onclick="adminDeleteEvent('${e.id}')" title="Delete">✕</button>
+        </div>`;
+    }).join('');
   }
+
+  // ─── ADMIN — ATTENDEES ───
+  function renderAttendeeEventSelect() {
+    const sel = document.getElementById('attendeeEventSelect');
+    const cur = sel.value;
+    const events = DB.getEvents();
+    sel.innerHTML = '<option value="">— choose an event —</option>' +
+      events.map(e => `<option value="${e.id}"${e.id === cur ? ' selected' : ''}>${e.name}</option>`).join('');
+    loadAttendeeList();
+  }
+
+  function loadAttendeeList() {
+    const id = document.getElementById('attendeeEventSelect').value;
+    document.getElementById('attendee-tools').style.display = id ? '' : 'none';
+    if (!id) return;
+    renderAttendeeList(id);
+  }
+
+  function renderAttendeeList(eventId) {
+    const atts = DB.getAttendees(eventId);
+    document.getElementById('attCount').textContent = atts.length;
+    const el = document.getElementById('attendeeList');
+    if (!atts.length) {
+      el.innerHTML = '<div class="empty-state">No attendees yet.</div>';
+      return;
+    }
+    el.innerHTML = atts.map(a => `
+      <div class="list-item">
+        <div class="list-item-main">
+          <div class="list-item-name">${a.firstName} ${a.lastName}</div>
+          <div class="list-item-sub">${[a.company, a.jobTitle].filter(Boolean).join(' · ')}</div>
+        </div>
+        <button class="btn-delete" onclick="adminDeleteAttendee('${eventId}','${a.id}')" title="Remove">✕</button>
+      </div>`).join('');
+  }
+
+  function adminAddAttendee() {
+    const id = document.getElementById('attendeeEventSelect').value;
+    if (!id) return;
+    const firstName = document.getElementById('attFirst').value.trim();
+    const lastName  = document.getElementById('attLast').value.trim();
+    if (!firstName || !lastName) { showToast('First and last name required', 'error'); return; }
+    const atts = DB.getAttendees(id);
+    atts.push({
+      id: Date.now().toString(),
+      firstName,
+      lastName,
+      email:   document.getElementById('attEmail').value.trim(),
+      company: document.getElementById('attCompany').value.trim(),
+      jobTitle: document.getElementById('attTitle').value.trim(),
+    });
+    DB.saveAttendees(id, atts);
+    ['attFirst','attLast','attEmail','attCompany','attTitle'].forEach(f => document.getElementById(f).value = '');
+    renderAttendeeList(id);
+    renderEventList();
+    showToast('Attendee added');
+  }
+
+  function adminDeleteAttendee(eventId, attId) {
+    const atts = DB.getAttendees(eventId).filter(a => a.id !== attId);
+    DB.saveAttendees(eventId, atts);
+    renderAttendeeList(eventId);
+    renderEventList();
+  }
+
+  function handleCSV(input) {
+    const eventId = document.getElementById('attendeeEventSelect').value;
+    if (!eventId || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const lines = e.target.result.split(/\r?\n/).filter(l => l.trim());
+      if (!lines.length) return;
+      const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim().toLowerCase());
+      const col = key => headers.findIndex(h => h.includes(key));
+      const iFirst   = col('first');
+      const iLast    = col('last');
+      const iEmail   = col('email');
+      const iCompany = col('company');
+      const iTitle   = col('title') !== -1 ? col('title') : col('job');
+      if (iFirst === -1 || iLast === -1) {
+        showToast('CSV needs "First Name" and "Last Name" columns', 'error'); return;
+      }
+      const existing = DB.getAttendees(eventId);
+      let added = 0;
+      lines.slice(1).forEach(line => {
+        const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
+        const firstName = cols[iFirst] || '';
+        const lastName  = cols[iLast]  || '';
+        if (!firstName && !lastName) return;
+        existing.push({
+          id: Date.now().toString() + Math.random(),
+          firstName,
+          lastName,
+          email:    iEmail   !== -1 ? cols[iEmail]   : '',
+          company:  iCompany !== -1 ? cols[iCompany] : '',
+          jobTitle: iTitle   !== -1 ? cols[iTitle]   : '',
+        });
+        added++;
+      });
+      DB.saveAttendees(eventId, existing);
+      input.value = '';
+      renderAttendeeList(eventId);
+      renderEventList();
+      showToast(`${added} attendees imported`);
+    };
+    reader.readAsText(input.files[0]);
+  }
+
+  // ─── ADMIN — SETTINGS ───
+  function saveSettings() {
+    const url = document.getElementById('webhookUrl').value.trim();
+    DB.saveWebhook(url);
+    webhookUrl = url;
+    showToast('Settings saved');
+  }
+
+  function showInstructions() { goTo('instructions'); }
+  function showSetup()         { goTo('setup'); }
 
   // ─── FORM ───
   function setRating(btn) {
@@ -882,10 +1521,17 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
   }
 
-  // Enter key on custom event input
-  document.getElementById('customEventInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') addCustomEvent();
+  document.getElementById('newEventName').addEventListener('keydown', e => {
+    if (e.key === 'Enter') adminAddEvent();
   });
+
+  // ─── INIT ───
+  (function init() {
+    webhookUrl = DB.getWebhook();
+    document.getElementById('webhookUrl').value = webhookUrl;
+    renderEventList();
+    renderAttendeeEventSelect();
+  })();
 </script>
 </body>
 </html>
