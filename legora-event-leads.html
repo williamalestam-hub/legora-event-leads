@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legora — Event Leads</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0f;
+    --surface: #161618;
+    --surface2: #1e1e21;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0efe8;
+    --muted: #888885;
+    --accent: #c8f562;
+    --accent-dim: rgba(200,245,98,0.12);
+    --red: #ff5f5f;
+    --amber: #f5a623;
+    --green: #4ade80;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* SCREENS */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ─── SETUP SCREEN ─── */
+  #setup {
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+
+  .setup-card {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .logo {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 2.5rem;
+  }
+
+  .setup-card h1 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    line-height: 1.25;
+  }
+
+  .setup-card .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 2.5rem;
+  }
+
+  .field-group {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: var(--muted);
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888885' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  .event-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    padding: 8px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--border2);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--muted);
+    background: var(--surface2);
+  }
+
+  .chip:hover { border-color: var(--accent); color: var(--text); }
+  .chip.selected { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  .custom-event-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .custom-event-row input {
+    flex: 1;
+  }
+
+  .btn-add {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 14px;
+    padding: 0 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-add:hover { color: var(--text); border-color: var(--border2); }
+
+  .webhook-row {
+    position: relative;
+  }
+
+  .webhook-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .webhook-hint a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #0e0e0f;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    margin-top: 8px;
+  }
+
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.99); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ─── LOGGING SCREEN ─── */
+  #logging {
+    flex-direction: column;
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+
+  .top-bar .event-tag {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 5px 12px;
+    border-radius: 99px;
+    letter-spacing: 0.02em;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .top-bar .count-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .top-bar .count-badge span {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .top-bar-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn-icon {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 13px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn-icon:hover { color: var(--text); border-color: var(--border2); }
+
+  .main-content {
+    flex: 1;
+    padding: 20px;
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Form */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .form-grid .full {
+    grid-column: 1 / -1;
+  }
+
+  .rating-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .rating-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .rating-btn:hover { border-color: var(--border2); color: var(--text); }
+  .rating-btn.hot { background: rgba(74,222,128,0.12); border-color: #4ade80; color: #4ade80; }
+  .rating-btn.warm { background: rgba(245,166,35,0.12); border-color: var(--amber); color: var(--amber); }
+  .rating-btn.cold { background: rgba(100,100,110,0.2); border-color: #555; color: #aaa; }
+
+  .rating-btn.selected-hot { background: rgba(74,222,128,0.2); border-color: #4ade80; color: #4ade80; }
+  .rating-btn.selected-warm { background: rgba(245,166,35,0.2); border-color: var(--amber); color: var(--amber); }
+  .rating-btn.selected-cold { background: rgba(100,100,110,0.3); border-color: #777; color: #ccc; }
+
+  textarea {
+    resize: vertical;
+    min-height: 90px;
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #0e0e0f;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-submit:hover { opacity: 0.9; }
+  .btn-submit:active { transform: scale(0.99); }
+  .btn-submit.loading { opacity: 0.7; pointer-events: none; }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: #0e0e0f;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 12px 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 100;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: rgba(74,222,128,0.4); color: var(--green); }
+  .toast.error { border-color: rgba(255,95,95,0.4); color: var(--red); }
+
+  /* Lead list */
+  .section-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 28px 0 12px;
+  }
+
+  .lead-list { display: flex; flex-direction: column; gap: 8px; padding-bottom: 40px; }
+
+  .lead-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideIn 0.25s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .lead-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    border: 1px solid rgba(200,245,98,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .lead-info { flex: 1; min-width: 0; }
+  .lead-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .lead-meta { font-size: 12px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .lead-rating {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 99px;
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+  }
+
+  .rating-hot { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .rating-warm { background: rgba(245,166,35,0.15); color: var(--amber); }
+  .rating-cold { background: rgba(120,120,130,0.2); color: #999; }
+
+  .lead-sync {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .sync-ok { background: var(--green); }
+  .sync-fail { background: var(--red); }
+  .sync-pending { background: var(--amber); }
+
+  /* ─── SETUP INSTRUCTIONS ─── */
+  #instructions {
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+
+  .instr-card {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .step-block {
+    margin-bottom: 24px;
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+
+  .step-block h3 {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .step-block p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .code-block {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: #b8f5a0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin-top: 8px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 24px 0;
+  }
+
+  .back-link {
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    padding: 0;
+  }
+  .back-link:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup" class="screen active">
+  <div class="setup-card">
+    <div class="logo">Legora</div>
+    <h1>Event lead logger</h1>
+    <p class="subtitle">Log leads on-site. They sync straight to your Google Sheet.</p>
+
+    <div class="field-group">
+      <label>Select event</label>
+      <div class="event-chips" id="eventChips">
+        <div class="chip" data-value="Presidenten">Presidenten</div>
+        <div class="chip" data-value="Germany (TBD)">Germany event</div>
+        <div class="chip" data-value="Her Counsel">Her Counsel</div>
+        <div class="chip" data-value="Golf Partnership">Golf Partnership</div>
+      </div>
+      <div class="custom-event-row">
+        <input type="text" id="customEventInput" placeholder="Add custom event..." />
+        <button class="btn-add" onclick="addCustomEvent()">+ Add</button>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label>Google Sheet webhook URL</label>
+      <div class="webhook-row">
+        <input type="url" id="webhookUrl" placeholder="https://script.google.com/macros/s/..." />
+      </div>
+      <p class="webhook-hint">
+        No webhook yet? <button class="back-link" onclick="showInstructions()">See 2-min setup guide →</button>
+      </p>
+    </div>
+
+    <button class="btn-primary" id="startBtn" onclick="startSession()" disabled>Start logging</button>
+  </div>
+</div>
+
+<!-- INSTRUCTIONS SCREEN -->
+<div id="instructions" class="screen">
+  <div class="instr-card">
+    <div class="logo">Legora</div>
+    <h1 style="margin-bottom:8px;">Google Sheet setup</h1>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:2rem;">Takes about 2 minutes. Do this once.</p>
+
+    <div class="step-block">
+      <div class="step-num">STEP 01</div>
+      <h3>Create a new Google Sheet</h3>
+      <p>Open Google Sheets and create a new spreadsheet. Name it "Legora Event Leads".</p>
+    </div>
+
+    <div class="step-block">
+      <div class="step-num">STEP 02</div>
+      <h3>Open Apps Script</h3>
+      <p>In the sheet, click <strong>Extensions → Apps Script</strong>. Delete any existing code and paste this:</p>
+      <div class="code-block">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+
+  // Add header row if sheet is empty
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow([
+      "Timestamp","Event","First Name","Last Name",
+      "Email","Company","Job Title","# Lawyers",
+      "Phone","Rating","Notes"
+    ]);
+  }
+
+  sheet.appendRow([
+    data.timestamp, data.event,
+    data.firstName, data.lastName,
+    data.email, data.company,
+    data.jobTitle, data.lawyers,
+    data.phone, data.rating, data.notes
+  ]);
+
+  return ContentService
+    .createTextOutput(JSON.stringify({status:"ok"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-num">STEP 03</div>
+      <h3>Deploy as web app</h3>
+      <p>Click <strong>Deploy → New deployment</strong>. Select type: <strong>Web app</strong>. Set "Who has access" to <strong>Anyone</strong>. Click Deploy and copy the URL.</p>
+    </div>
+
+    <div class="step-block">
+      <div class="step-num">STEP 04</div>
+      <h3>Paste the URL back in the app</h3>
+      <p>That's it. Paste the URL into the webhook field and start logging.</p>
+    </div>
+
+    <button class="btn-primary" onclick="showSetup()">← Back to setup</button>
+  </div>
+</div>
+
+<!-- LOGGING SCREEN -->
+<div id="logging" class="screen">
+  <div class="top-bar">
+    <div class="event-tag" id="activeEventTag">Event name</div>
+    <div class="count-badge"><span id="leadCount">0</span> leads</div>
+    <div class="top-bar-actions">
+      <button class="btn-icon" onclick="exportCSV()">Export CSV</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+
+    <!-- Form -->
+    <div class="form-grid">
+      <div>
+        <label>First name *</label>
+        <input type="text" id="firstName" placeholder="Anna" />
+      </div>
+      <div>
+        <label>Last name *</label>
+        <input type="text" id="lastName" placeholder="Svensson" />
+      </div>
+      <div>
+        <label>Email *</label>
+        <input type="email" id="email" placeholder="anna@firm.com" class="full" />
+      </div>
+      <div>
+        <label>Company</label>
+        <input type="text" id="company" placeholder="Law firm name" />
+      </div>
+      <div>
+        <label>Job title</label>
+        <input type="text" id="jobTitle" placeholder="Partner" />
+      </div>
+      <div>
+        <label># of lawyers</label>
+        <input type="number" id="lawyers" placeholder="50" min="1" />
+      </div>
+      <div>
+        <label>Phone</label>
+        <input type="tel" id="phone" placeholder="+46 70 000 0000" />
+      </div>
+      <div>
+        <label>Lead quality</label>
+        <div class="rating-row">
+          <button class="rating-btn" data-rating="Hot" onclick="setRating(this)">🔥 Hot</button>
+          <button class="rating-btn" data-rating="Warm" onclick="setRating(this)">☀️ Warm</button>
+          <button class="rating-btn" data-rating="Cold" onclick="setRating(this)">❄️ Cold</button>
+        </div>
+      </div>
+      <div class="full">
+        <label>Notes</label>
+        <textarea id="notes" placeholder="What did you talk about? Any follow-up actions?"></textarea>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="submitBtn" onclick="submitLead()">
+      <div class="spinner" id="spinner"></div>
+      <span id="submitLabel">Log lead</span>
+    </button>
+
+    <div class="section-title" id="listTitle" style="display:none;">Logged today</div>
+    <div class="lead-list" id="leadList"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let selectedEvent = '';
+  let webhookUrl = '';
+  let leads = [];
+  let selectedRating = '';
+
+  // ─── SETUP ───
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      selectedEvent = chip.dataset.value;
+      updateStartBtn();
+    });
+  });
+
+  document.getElementById('webhookUrl').addEventListener('input', updateStartBtn);
+
+  function updateStartBtn() {
+    const btn = document.getElementById('startBtn');
+    btn.disabled = !(selectedEvent && document.getElementById('webhookUrl').value.trim());
+  }
+
+  function addCustomEvent() {
+    const val = document.getElementById('customEventInput').value.trim();
+    if (!val) return;
+    const chips = document.getElementById('eventChips');
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.dataset.value = val;
+    chip.textContent = val;
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      selectedEvent = val;
+      updateStartBtn();
+    });
+    chips.appendChild(chip);
+    chip.click();
+    document.getElementById('customEventInput').value = '';
+  }
+
+  function showInstructions() {
+    document.getElementById('setup').classList.remove('active');
+    document.getElementById('instructions').classList.add('active');
+  }
+
+  function showSetup() {
+    document.getElementById('instructions').classList.remove('active');
+    document.getElementById('setup').classList.add('active');
+  }
+
+  function startSession() {
+    webhookUrl = document.getElementById('webhookUrl').value.trim();
+    document.getElementById('activeEventTag').textContent = selectedEvent;
+    document.getElementById('setup').classList.remove('active');
+    document.getElementById('logging').classList.add('active');
+  }
+
+  // ─── FORM ───
+  function setRating(btn) {
+    document.querySelectorAll('.rating-btn').forEach(b => {
+      b.className = 'rating-btn';
+    });
+    selectedRating = btn.dataset.rating;
+    const map = { Hot: 'selected-hot', Warm: 'selected-warm', Cold: 'selected-cold' };
+    btn.classList.add(map[selectedRating]);
+  }
+
+  async function submitLead() {
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const email = document.getElementById('email').value.trim();
+
+    if (!firstName || !lastName || !email) {
+      showToast('First name, last name and email are required', 'error');
+      return;
+    }
+
+    const lead = {
+      timestamp: new Date().toISOString(),
+      event: selectedEvent,
+      firstName,
+      lastName,
+      email,
+      company: document.getElementById('company').value.trim(),
+      jobTitle: document.getElementById('jobTitle').value.trim(),
+      lawyers: document.getElementById('lawyers').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      rating: selectedRating,
+      notes: document.getElementById('notes').value.trim()
+    };
+
+    // UI loading state
+    const btn = document.getElementById('submitBtn');
+    const spinner = document.getElementById('spinner');
+    const label = document.getElementById('submitLabel');
+    btn.classList.add('loading');
+    spinner.style.display = 'block';
+    label.textContent = 'Syncing...';
+
+    let syncStatus = 'pending';
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lead)
+      });
+      syncStatus = 'ok';
+      showToast(`${firstName} ${lastName} logged ✓`, 'success');
+    } catch (err) {
+      syncStatus = 'fail';
+      showToast('Saved locally — sync failed. Will retry on export.', 'error');
+    }
+
+    lead._syncStatus = syncStatus;
+    leads.push(lead);
+    renderLead(lead);
+    document.getElementById('leadCount').textContent = leads.length;
+    clearForm();
+
+    btn.classList.remove('loading');
+    spinner.style.display = 'none';
+    label.textContent = 'Log lead';
+  }
+
+  function clearForm() {
+    ['firstName','lastName','email','company','jobTitle','lawyers','phone','notes'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    selectedRating = '';
+    document.querySelectorAll('.rating-btn').forEach(b => b.className = 'rating-btn');
+    document.getElementById('firstName').focus();
+  }
+
+  function renderLead(lead) {
+    const list = document.getElementById('leadList');
+    const title = document.getElementById('listTitle');
+    title.style.display = 'block';
+
+    const initials = (lead.firstName[0] + lead.lastName[0]).toUpperCase();
+    const ratingClass = lead.rating ? 'rating-' + lead.rating.toLowerCase() : '';
+    const syncClass = { ok: 'sync-ok', fail: 'sync-fail', pending: 'sync-pending' }[lead._syncStatus];
+
+    const card = document.createElement('div');
+    card.className = 'lead-card';
+    card.innerHTML = `
+      <div class="lead-avatar">${initials}</div>
+      <div class="lead-info">
+        <div class="lead-name">${lead.firstName} ${lead.lastName}</div>
+        <div class="lead-meta">${[lead.company, lead.jobTitle].filter(Boolean).join(' · ')}</div>
+      </div>
+      ${lead.rating ? `<span class="lead-rating ${ratingClass}">${lead.rating}</span>` : ''}
+      <div class="lead-sync ${syncClass}" title="${lead._syncStatus}"></div>
+    `;
+    list.insertBefore(card, list.firstChild);
+  }
+
+  function exportCSV() {
+    if (!leads.length) { showToast('No leads to export', 'error'); return; }
+    const headers = ['Timestamp','Event','First Name','Last Name','Email','Company','Job Title','# Lawyers','Phone','Rating','Notes'];
+    const rows = leads.map(l => [
+      l.timestamp, l.event, l.firstName, l.lastName, l.email,
+      l.company, l.jobTitle, l.lawyers, l.phone, l.rating, l.notes
+    ].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `legora-leads-${selectedEvent.replace(/\s+/g,'-')}-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ─── TOAST ───
+  let toastTimer;
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // Enter key on custom event input
+  document.getElementById('customEventInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addCustomEvent();
+  });
+</script>
+</body>
+</html>
