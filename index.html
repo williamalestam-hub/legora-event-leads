@@ -2416,9 +2416,10 @@ function renderAdminSettings(main){
         <label class="el-input" style="width:100%; margin-bottom:12px;"><input id="webhookInput" value="${esc(hook)}" placeholder="https://api.clay.com/v3/sources/webhook/…"></label>
         <div style="display:flex; gap:8px; align-items:center;">
           <button class="el-btn el-btn-primary" onclick="admSaveWebhook()">Save webhook</button>
-          <button class="el-btn el-btn-secondary" onclick="admTestWebhook()" ${hook ? '' : 'disabled style="opacity:.5; cursor:not-allowed;"'}>Send test event</button>
+          <button class="el-btn el-btn-secondary" onclick="admTestWebhook()">Send test event</button>
           ${hook ? `<button class="el-btn el-btn-ghost" onclick="admClearWebhook()" style="color:#c52925;">Clear</button>` : ''}
         </div>
+        <div style="font-size:12px; color:#9b6b6b; margin-top:8px;">Tip: paste the URL and click <b>Send test event</b> — no need to save first.</div>
       </div>
       <div class="el-card" style="padding:22px 22px 20px;">
         <div class="el-eyebrow" style="margin-bottom:8px;">Payload schema</div>
@@ -2442,8 +2443,14 @@ function admClearWebhook(){
   renderAdmin();
 }
 function admTestWebhook(){
-  const url = DB.getWebhook();
-  if (!url){ showToast('Save a webhook URL first', 'error'); return; }
+  const input = document.getElementById('webhookInput');
+  const url = (input && input.value.trim()) || DB.getWebhook();
+  if (!url){ showToast('Paste a webhook URL first', 'error'); return; }
+  // Persist whatever is currently in the field so subsequent leads hit the same URL.
+  if (url !== DB.getWebhook()){
+    DB.saveWebhook(url);
+    if (FB.ready()) FB.set('config/webhook', url);
+  }
   const payload = {
     timestamp: new Date().toISOString(),
     event: 'TEST · Event Leads',
