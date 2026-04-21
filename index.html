@@ -251,7 +251,6 @@ body {
 .booth-heading { font-family:'Noto Serif',ui-serif,Georgia,serif; font-size:38px; line-height:44px; margin:0 0 10px; font-weight:500; letter-spacing:-0.02em; color:#00311C; }
 .booth-sub { font-size:15px; line-height:22px; color:#595959; margin:0 0 28px; }
 .booth-cta { background: var(--color-brand-gray3); color: #1c1c1c; border-color: rgba(0,0,0,.08); }
-.booth-foot { padding:10px 24px; border-top:1px solid rgba(0,0,0,.06); font-size:11px; color:#6b6b6b; display:flex; justify-content:space-between; }
 .booth-jude { flex:1; display:flex; flex-direction:column; padding:20px 24px 28px; position:relative; overflow:hidden; min-height:0; }
 .booth-hero { position:relative; border-radius:14px; overflow:hidden; background:#1c1c1c; flex:1; min-height:0; display:flex; align-items:flex-end; box-shadow:0 30px 60px rgba(0,0,0,.15); }
 .booth-hero img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center top; }
@@ -748,6 +747,87 @@ function showToast(msg, type){
   showToast._tid = setTimeout(() => t.className = 'toast', 2200);
 }
 
+// ═══════════════ MODAL HELPERS ═══════════════
+function confirmModal({ id, title, body, confirmLabel, danger, onConfirm }){
+  const kd = e => { if (e.key === 'Escape') close(); };
+  const close = () => {
+    document.removeEventListener('keydown', kd);
+    const n = document.getElementById(id); if (n) n.remove();
+  };
+  const root = h('div', { id, class:'modal-backdrop', onclick: e => { if (e.target === root) close(); } });
+  root.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div>
+          <h2 class="modal-title">${esc(title)}</h2>
+          ${body ? `<p class="modal-sub">${esc(body)}</p>` : ''}
+        </div>
+        <button class="modal-close" type="button" aria-label="Close">${ICONS.close}</button>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="el-btn el-btn-ghost" data-role="cancel">Cancel</button>
+        <button type="button" class="el-btn ${danger ? 'el-btn-danger' : 'el-btn-primary'}" id="${id}Ok">${esc(confirmLabel || 'Confirm')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(root);
+  root.querySelector('.modal-close').onclick = close;
+  root.querySelector('[data-role="cancel"]').onclick = close;
+  root.querySelector('#' + id + 'Ok').onclick = () => { close(); onConfirm(); };
+  document.addEventListener('keydown', kd);
+}
+function formModal({ id, title, subtitle, fields, rows, submitLabel, onSubmit }){
+  // fields: [{key, label, type='text', placeholder='', required=false, autocomplete=''}]
+  // rows: optional array of field-key pairs to lay out 2-per-row
+  const kd = e => { if (e.key === 'Escape') close(); };
+  const close = () => {
+    document.removeEventListener('keydown', kd);
+    const n = document.getElementById(id); if (n) n.remove();
+  };
+  const root = h('div', { id, class:'modal-backdrop', onclick: e => { if (e.target === root) close(); } });
+  const rowSet = new Set((rows || []).flat());
+  const paired = (rows || []);
+  const standalone = fields.filter(f => !rowSet.has(f.key));
+  function fieldHtml(f){
+    return `<div class="modal-field">
+      <label class="el-eyebrow" for="${id}_${f.key}">${esc(f.label)}</label>
+      <label class="el-input"><input id="${id}_${f.key}" name="${f.key}" type="${f.type||'text'}" placeholder="${esc(f.placeholder||'')}" ${f.required?'required':''} autocomplete="${f.autocomplete||'off'}"></label>
+    </div>`;
+  }
+  const bodyHtml = [
+    ...paired.map(pair => `<div class="modal-row">${pair.map(k => fieldHtml(fields.find(f=>f.key===k))).join('')}</div>`),
+    ...standalone.map(fieldHtml),
+  ].join('');
+  root.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div>
+          <h2 class="modal-title">${esc(title)}</h2>
+          ${subtitle ? `<p class="modal-sub">${esc(subtitle)}</p>` : ''}
+        </div>
+        <button class="modal-close" type="button" aria-label="Close">${ICONS.close}</button>
+      </div>
+      <form id="${id}Form" novalidate>
+        ${bodyHtml}
+        <div class="modal-actions">
+          <button type="button" class="el-btn el-btn-ghost" data-role="cancel">Cancel</button>
+          <button type="submit" class="el-btn el-btn-primary">${esc(submitLabel||'Save')}</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(root);
+  root.querySelector('.modal-close').onclick = close;
+  root.querySelector('[data-role="cancel"]').onclick = close;
+  root.querySelector('#' + id + 'Form').onsubmit = e => {
+    e.preventDefault();
+    const vals = {};
+    fields.forEach(f => { vals[f.key] = (root.querySelector('#' + id + '_' + f.key).value || '').trim(); });
+    close();
+    onSubmit(vals);
+  };
+  document.addEventListener('keydown', kd);
+  setTimeout(() => { const first = root.querySelector('input'); if (first) first.focus(); }, 40);
+}
+
 // ═══════════════ DB ═══════════════
 const DB = {
   getEvents()            { return JSON.parse(localStorage.getItem('le_events') || '[]'); },
@@ -1192,15 +1272,21 @@ function saveNewRep(){
   renderRepPicker();
 }
 function addRepPrompt(){
-  const name = prompt('Your name?');
-  if (!name) return;
-  const v = name.trim();
-  if (!v) return;
-  const r = { id: uid('r'), name: v };
-  const reps = DB.getReps(); reps.push(r); DB.saveReps(reps);
-  DB.setActiveRepId(r.id);
-  if (FB.ready()) FB.set('config/reps/' + r.id, r);
-  renderRepPicker();
+  formModal({
+    id: 'addRepModal',
+    title: 'Add rep',
+    subtitle: 'Add a new sales rep to the roster.',
+    fields: [{ key:'name', label:'Full name', required:true, placeholder:'e.g. Anna Svensson', autocomplete:'name' }],
+    submitLabel: 'Add rep',
+    onSubmit: ({ name }) => {
+      if (!name) return;
+      const r = { id: uid('r'), name };
+      const reps = DB.getReps(); reps.push(r); DB.saveReps(reps);
+      DB.setActiveRepId(r.id);
+      if (FB.ready()) FB.set('config/reps/' + r.id, r);
+      renderRepPicker();
+    },
+  });
 }
 function changeRep(){ DB.setActiveRepId(''); renderRepPicker(); }
 
@@ -1260,18 +1346,27 @@ function renderRepList(){
   list.appendChild(addBtn);
 }
 function walkInPrompt(){
-  const first = prompt('First name?');
-  if (!first) return;
-  const last = prompt('Last name?') || '';
-  const company = prompt('Firm / Company?') || '';
-  const email = prompt('Email (optional)?') || '';
-  const evId = DB.getActiveEventId();
-  const att = { id: uid('a'), first: first.trim(), last: last.trim(), company: company.trim(), email: email.trim(), title: '' };
-  const atts = DB.getAttendees(evId);
-  atts.unshift(att);
-  DB.saveAttendees(evId, atts);
-  if (FB.ready()) FB.set('attendees/' + evId + '/' + att.id, att);
-  openQuickLog(att.id);
+  formModal({
+    id: 'walkInModal',
+    title: 'Add walk-in',
+    subtitle: 'Log an attendee who isn\'t on the list.',
+    fields: [
+      { key:'first', label:'First name', required:true, placeholder:'First', autocomplete:'given-name' },
+      { key:'last',  label:'Last name',  placeholder:'Last',  autocomplete:'family-name' },
+      { key:'company', label:'Firm / Company', placeholder:'e.g. Baker McKenzie' },
+      { key:'email',   label:'Email',    placeholder:'name@example.com', type:'email', autocomplete:'email' },
+    ],
+    rows: [['first','last']],
+    submitLabel: 'Add & log',
+    onSubmit: ({ first, last, company, email }) => {
+      if (!first) return;
+      const evId = DB.getActiveEventId();
+      const att = { id: uid('a'), first, last, company, email, title: '' };
+      const atts = DB.getAttendees(evId); atts.unshift(att); DB.saveAttendees(evId, atts);
+      if (FB.ready()) FB.set('attendees/' + evId + '/' + att.id, att);
+      openQuickLog(att.id);
+    },
+  });
 }
 
 // ═══════════════ QUICK LOG BOTTOM SHEET ═══════════════
@@ -1746,7 +1841,11 @@ function admAddEvent(existing){
   const isFirst = !isEdit && DB.getEvents().length === 0;
   const today = new Date().toISOString().slice(0,10);
   const data = existing ? { ...existing } : { name:'', code:'', date: today, active: isFirst };
-  const close = () => { const n = document.getElementById('admEventModal'); if (n) n.remove(); };
+  const kd = e => { if (e.key === 'Escape') close(); };
+  const close = () => {
+    document.removeEventListener('keydown', kd);
+    const n = document.getElementById('admEventModal'); if (n) n.remove();
+  };
   const root = h('div', { id:'admEventModal', class:'modal-backdrop', onclick: e => { if (e.target === root) close(); } });
   root.innerHTML = `
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="admEvTitle">
@@ -1804,9 +1903,7 @@ function admAddEvent(existing){
   dateInput.addEventListener('change', suggestCode);
   root.querySelector('.modal-close').onclick = close;
   root.querySelector('[data-role="cancel"]').onclick = close;
-  document.addEventListener('keydown', function esc(e){
-    if (e.key === 'Escape'){ close(); document.removeEventListener('keydown', esc); }
-  });
+  document.addEventListener('keydown', kd);
   root.querySelector('#admEvForm').onsubmit = e => {
     e.preventDefault();
     const name = nameInput.value.trim();
@@ -1844,18 +1941,28 @@ function admToggleActive(id){
   renderAdmin();
 }
 function admDeleteEvent(id){
-  if (!confirm('Delete this event and all its leads/captures?')) return;
-  const events = DB.getEvents().filter(e => e.id !== id);
-  DB.saveEvents(events);
-  localStorage.removeItem('le_att_' + id);
-  localStorage.removeItem('le_leads_' + id);
-  localStorage.removeItem('le_booth_' + id);
-  localStorage.removeItem('le_booth_design_' + id);
-  if (FB.ready()){ FB.remove('events/' + id); FB.remove('attendees/' + id); FB.remove('leads/' + id); FB.remove('boothCaptures/' + id); FB.remove('boothDesign/' + id); }
-  if (adminScope === 'event' && adminEventId === id){
-    adminScope = 'workspace'; adminTab = 'events'; adminEventId = '';
-  }
-  renderAdmin();
+  const ev = DB.getEvents().find(e => e.id === id);
+  confirmModal({
+    id: 'delEventModal',
+    title: 'Delete event?',
+    body: `"${(ev&&ev.name)||'This event'}" and all its attendees, leads, and booth captures will be permanently deleted.`,
+    confirmLabel: 'Delete event',
+    danger: true,
+    onConfirm: () => {
+      const events = DB.getEvents().filter(e => e.id !== id);
+      DB.saveEvents(events);
+      localStorage.removeItem('le_att_' + id);
+      localStorage.removeItem('le_leads_' + id);
+      localStorage.removeItem('le_booth_' + id);
+      localStorage.removeItem('le_booth_design_' + id);
+      if (FB.ready()){ FB.remove('events/' + id); FB.remove('attendees/' + id); FB.remove('leads/' + id); FB.remove('boothCaptures/' + id); FB.remove('boothDesign/' + id); }
+      if (adminScope === 'event' && adminEventId === id){
+        adminScope = 'workspace'; adminTab = 'events'; adminEventId = '';
+        persistAdminNav();
+      }
+      renderAdmin();
+    },
+  });
 }
 
 // ═══ Admin: Attendees ═══
@@ -1904,22 +2011,43 @@ function renderAdminAttendees(main, evId){
   redraw();
 }
 function admAddAttendee(evId){
-  const first = prompt('First name?'); if (!first) return;
-  const last = prompt('Last name?') || '';
-  const email = prompt('Email?') || '';
-  const company = prompt('Firm?') || '';
-  const title = prompt('Title?') || '';
-  const att = { id: uid('a'), first: first.trim(), last: last.trim(), email: email.trim(), company: company.trim(), title: title.trim() };
-  const atts = DB.getAttendees(evId); atts.unshift(att); DB.saveAttendees(evId, atts);
-  if (FB.ready()) FB.set('attendees/' + evId + '/' + att.id, att);
-  renderAdmin();
+  formModal({
+    id: 'addAttModal',
+    title: 'Add attendee',
+    subtitle: 'Manually add a single attendee. Use Import CSV for bulk uploads.',
+    fields: [
+      { key:'first',   label:'First name', required:true, placeholder:'First', autocomplete:'given-name' },
+      { key:'last',    label:'Last name',  placeholder:'Last', autocomplete:'family-name' },
+      { key:'email',   label:'Email', type:'email', placeholder:'name@example.com', autocomplete:'email' },
+      { key:'company', label:'Firm / Company', placeholder:'e.g. Baker McKenzie' },
+      { key:'title',   label:'Title', placeholder:'e.g. Partner' },
+    ],
+    rows: [['first','last'],['email','company']],
+    submitLabel: 'Add attendee',
+    onSubmit: ({ first, last, email, company, title }) => {
+      if (!first) return;
+      const att = { id: uid('a'), first, last, email, company, title };
+      const atts = DB.getAttendees(evId); atts.unshift(att); DB.saveAttendees(evId, atts);
+      if (FB.ready()) FB.set('attendees/' + evId + '/' + att.id, att);
+      renderAdmin();
+    },
+  });
 }
 function admRemoveAttendee(evId, id){
-  if (!confirm('Remove this attendee?')) return;
-  const atts = DB.getAttendees(evId).filter(a => a.id !== id);
-  DB.saveAttendees(evId, atts);
-  if (FB.ready()) FB.remove('attendees/' + evId + '/' + id);
-  renderAdmin();
+  const a = DB.getAttendees(evId).find(x => x.id === id);
+  confirmModal({
+    id: 'delAttModal',
+    title: 'Remove attendee?',
+    body: a ? `${a.first} ${a.last} will be removed from the list. Their logged leads will remain.` : 'This attendee will be removed.',
+    confirmLabel: 'Remove',
+    danger: true,
+    onConfirm: () => {
+      const atts = DB.getAttendees(evId).filter(x => x.id !== id);
+      DB.saveAttendees(evId, atts);
+      if (FB.ready()) FB.remove('attendees/' + evId + '/' + id);
+      renderAdmin();
+    },
+  });
 }
 function admImportCSV(input, evId){
   const f = input.files && input.files[0]; if (!f) return;
@@ -2170,9 +2298,14 @@ function persistDesign(d){
 }
 function admResetDesign(){
   if (!designerEvId) return;
-  if (!confirm('Reset this event\'s booth design to defaults?')) return;
-  persistDesign(defaultBoothDesign());
-  renderAdmin();
+  confirmModal({
+    id: 'resetDesignModal',
+    title: 'Reset booth design?',
+    body: 'All copy and settings will revert to the defaults. This can\'t be undone.',
+    confirmLabel: 'Reset to default',
+    danger: true,
+    onConfirm: () => { persistDesign(defaultBoothDesign()); renderAdmin(); },
+  });
 }
 function setDesignerStep(s){ designerStep = s; redrawDesignerPreview(); }
 function redrawDesignerPreview(){
