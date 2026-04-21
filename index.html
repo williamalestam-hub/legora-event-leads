@@ -642,6 +642,7 @@ body {
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 
 <script>
 // ═══════════════ CONSTANTS ═══════════════
@@ -727,6 +728,24 @@ function fmtDate(iso){
 function nowIso(){ return new Date().toISOString(); }
 function uid(prefix){ return (prefix||'id') + Math.random().toString(36).slice(2, 8); }
 
+function realQR(text, size){
+  size = size || 96;
+  if (!text || typeof window.qrcode !== 'function') return fauxQR(size);
+  try {
+    const q = window.qrcode(0, 'M');
+    q.addData(String(text));
+    q.make();
+    const cells = q.getModuleCount();
+    const s = size / cells;
+    let rects = `<rect x="0" y="0" width="${size}" height="${size}" fill="#fff"/>`;
+    for (let r=0; r<cells; r++) for (let c=0; c<cells; c++){
+      if (q.isDark(r, c)) rects += `<rect x="${(c*s).toFixed(2)}" y="${(r*s).toFixed(2)}" width="${s.toFixed(2)}" height="${s.toFixed(2)}" fill="#1c1c1c"/>`;
+    }
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" role="img" aria-label="QR code">${rects}</svg>`;
+  } catch(e){
+    return fauxQR(size);
+  }
+}
 function fauxQR(size){
   size = size || 72;
   const cells = 21;
@@ -796,6 +815,7 @@ function defaultBoothDesign(){
     thanksBody: 'The film is on its way to your inbox.\nSee you on the other side.',
     heroImage: '',
     showQR: true,
+    qrUrl: 'https://legora.com',
   };
 }
 
@@ -1083,7 +1103,7 @@ function renderBoothStep(evId, ev){
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="film-line">${esc(d.filmLine1)}<br>${esc(d.filmLine2)}<br>${esc(d.filmLine3)}</div>
           </div>
-          ${d.showQR ? `<div class="booth-qr">${fauxQR(72)}</div>` : ''}
+          ${d.showQR ? `<a href="${esc(d.qrUrl||'#')}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none;" aria-label="Scan or tap to open ${esc(d.qrUrl||'')}">${realQR(d.qrUrl, 96)}</a>` : ''}
         </div>
         <div style="margin-top:16px; text-align:center;">
           <div class="el-eyebrow" style="margin-bottom:6px;">SCAN TO WATCH THE FILM</div>
@@ -1872,6 +1892,7 @@ function renderAdminDesigner(main){
               <span style="font-size:13px; margin-left:10px;">QR is ${d.showQR?'visible':'hidden'}</span>
             </label>
           `)}
+          ${designerField('QR CODE URL', designerInput('qrUrl', d.qrUrl, 'https://legora.com/film'), 'Where the QR sends visitors when scanned.')}
         `)}
         ${designerSection('3 · Thank-you', `
           <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px;">
@@ -1987,7 +2008,7 @@ function designerStepPreview(d, step){
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="serif" style="font-size:22px; line-height:28px; font-weight:500; letter-spacing:-0.01em;">${esc(d.filmLine1||'')}<br>${esc(d.filmLine2||'')}<br>${esc(d.filmLine3||'')}</div>
           </div>
-          ${d.showQR ? `<div style="position:absolute; top:14px; right:14px; background:#fff; padding:8px; border-radius:8px;">${fauxQR(72)}</div>` : ''}
+          ${d.showQR ? `<div style="position:absolute; top:14px; right:14px; background:#fff; padding:8px; border-radius:8px;">${realQR(d.qrUrl, 72)}</div>` : ''}
         </div>
       </div>`;
   }
