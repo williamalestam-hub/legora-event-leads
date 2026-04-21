@@ -1005,6 +1005,13 @@ function setupFirebaseListeners(){
     });
     FB.on('boothDesign/' + ev.id, design => {
       if (design) DB.saveBoothDesign(ev.id, Object.assign(defaultBoothDesign(), design));
+      // If the user is actively editing this event's design in the admin designer,
+      // don't rebuild the form (it would destroy the focused input mid-keystroke).
+      // The preview already updates locally on each keystroke; that's enough.
+      if (currentScreen === 'admin' && adminScope === 'event' && adminTab === 'design' && ev.id === designerEvId) {
+        redrawDesignerPreview();
+        return;
+      }
       rerenderActiveScreen();
     });
     FB.on('boothCaptures/' + ev.id, obj => {
