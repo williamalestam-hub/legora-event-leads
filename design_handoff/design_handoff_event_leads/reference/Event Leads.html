@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Event Leads — Legora</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="legora.css"/>
+<style>
+  html, body { margin:0; padding:0; background:#f0eee9; height:100%; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; }
+  @keyframes elPulse { 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
+  @keyframes elFade  { from{ opacity:0 } to{ opacity:1 } }
+  @keyframes elSheet { from{ transform:translateY(100%) } to{ transform:translateY(0) } }
+
+  /* tweaks panel */
+  .el-tweaks {
+    position: fixed; right: 20px; bottom: 20px; z-index: 120;
+    width: 260px; background: #fff; border:1px solid rgba(0,0,0,.1);
+    border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.06);
+    font-family: 'Inter',sans-serif; font-size:13px; color:#1c1c1c; overflow:hidden;
+  }
+  .el-tweaks h4 { margin:0; padding:12px 14px; font-size:12px; letter-spacing:.06em;
+    text-transform:uppercase; color:#6b6b6b; border-bottom:1px solid rgba(0,0,0,.06);
+    display:flex; justify-content:space-between; align-items:center; font-weight:550; }
+  .el-tweaks .row { padding:10px 14px; border-bottom:1px solid rgba(0,0,0,.04); }
+  .el-tweaks .row:last-child { border:0; }
+  .el-tweaks label { display:block; font-size:11px; color:#6b6b6b; margin-bottom:6px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; }
+  .el-tweaks .chips { display:flex; gap:4px; flex-wrap:wrap; }
+  .el-tweaks .chip {
+    padding: 4px 8px; font-size:12px; border:1px solid rgba(0,0,0,.1);
+    border-radius:999px; background:#fcfcfc; cursor:pointer;
+  }
+  .el-tweaks .chip.on { background:#1c1c1c; color:#fff; border-color:#1c1c1c; }
+  .el-tweaks .sw {
+    width: 30px; height: 18px; border-radius:99px; background:rgba(0,0,0,.15);
+    position:relative; cursor:pointer; transition: background .15s;
+  }
+  .el-tweaks .sw::after {
+    content:''; position:absolute; top:2px; left:2px; width:14px; height:14px;
+    border-radius:99px; background:#fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  }
+  .el-tweaks .sw.on { background:#ce5f27; }
+  .el-tweaks .sw.on::after { transform: translateX(12px); }
+  .el-tweaks .flex { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+
+  /* signal color variants — applied to body */
+  body[data-signal="copper"] { /* default */ }
+  body[data-signal="skyline"] .el-btn-copper { background: #4260a8; }
+  body[data-signal="skyline"] .el-btn-copper:hover { background: #33508f; }
+  body[data-signal="skyline"] .el-badge-copper { background: rgba(66,96,168,.14); color:#4260a8; }
+  body[data-signal="skyline"] { --rb-copper-bg: rgba(66,96,168,.14); --rb-copper-text: #4260a8; --color-brand-dark-copper:#4260a8; }
+
+  body[data-signal="green"] .el-btn-copper { background: #367b2c; }
+  body[data-signal="green"] .el-btn-copper:hover { background: #2a6322; }
+  body[data-signal="green"] { --rb-copper-bg: rgba(54,123,44,.14); --rb-copper-text: #367b2c; --color-brand-dark-copper:#367b2c; }
+
+  /* density */
+  body[data-density="cozy"] .el-card { border-radius: 10px; }
+  body[data-density="dense"] .el-btn { height: 28px; }
+  body[data-density="dense"] .el-input { height: 32px; }
+
+  /* typography variant */
+  body[data-serif="off"] .el-root .serif { font-family: 'Inter', sans-serif; font-weight: 500; letter-spacing: -0.015em; }
+</style>
+</head>
+<body data-signal="copper" data-density="cozy" data-serif="on">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="data.js?v=5"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="atoms.jsx"></script>
+<script type="text/babel" src="booth.jsx"></script>
+<script type="text/babel" src="rep.jsx"></script>
+<script type="text/babel" src="desktop.jsx"></script>
+<script type="text/babel" src="login.jsx"></script>
+
+<div id="root"></div>
+<div id="tweaks-root"></div>
+
+<script type="text/babel" data-presets="react">
+const TWEAKS_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "signal": "copper",
+  "density": "cozy",
+  "serif": true,
+  "showJude": true,
+  "glowLive": true,
+  "autoDemo": false
+}/*EDITMODE-END*/;
+
+function Tweaks({ tweaks, setT }){
+  const set = (k,v) => setT({...tweaks, [k]: v});
+  return (
+    <div className="el-tweaks">
+      <h4>Tweaks <span style={{ fontWeight:425, color:'#ababab', fontSize:10 }}>Legora · EL</span></h4>
+      <div className="row">
+        <label>Signal color</label>
+        <div className="chips">
+          {['copper','skyline','green'].map(c => (
+            <span key={c} className={`chip ${tweaks.signal===c?'on':''}`} onClick={()=>set('signal',c)}>{c}</span>
+          ))}
+        </div>
+      </div>
+      <div className="row">
+        <label>Density</label>
+        <div className="chips">
+          {['cozy','default','dense'].map(d => (
+            <span key={d} className={`chip ${tweaks.density===d?'on':''}`} onClick={()=>set('density',d)}>{d}</span>
+          ))}
+        </div>
+      </div>
+      <div className="row flex">
+        <div><div style={{ fontSize:13, fontWeight:475 }}>Serif headers</div><div style={{ fontSize:11, color:'#6b6b6b' }}>Noto Serif on titles</div></div>
+        <span className={`sw ${tweaks.serif?'on':''}`} onClick={()=>set('serif',!tweaks.serif)}/>
+      </div>
+      <div className="row flex">
+        <div><div style={{ fontSize:13, fontWeight:475 }}>Jude Law moment</div><div style={{ fontSize:11, color:'#6b6b6b' }}>QR film at booth</div></div>
+        <span className={`sw ${tweaks.showJude?'on':''}`} onClick={()=>set('showJude',!tweaks.showJude)}/>
+      </div>
+      <div className="row flex">
+        <div><div style={{ fontSize:13, fontWeight:475 }}>Pulse live indicator</div><div style={{ fontSize:11, color:'#6b6b6b' }}>Dashboard heartbeat</div></div>
+        <span className={`sw ${tweaks.glowLive?'on':''}`} onClick={()=>set('glowLive',!tweaks.glowLive)}/>
+      </div>
+      <div className="row flex" style={{ background:'rgba(206,95,39,.06)' }}>
+        <div><div style={{ fontSize:13, fontWeight:475, color:'#ce5f27' }}>Reset demo data</div><div style={{ fontSize:11, color:'#6b6b6b' }}>Reload seed</div></div>
+        <button className="el-btn el-btn-secondary el-btn-sm" onClick={()=>window.EL.reset()}>Reset</button>
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [tweaks, setT] = React.useState(TWEAKS_DEFAULTS);
+  const [tweaksOn, setTweaksOn] = React.useState(false);
+  const [unlocked, setUnlocked] = React.useState(() => {
+    try { return sessionStorage.getItem('legora_el_unlocked') === '1'; } catch(e) { return false; }
+  });
+
+  React.useEffect(() => {
+    document.body.dataset.signal = tweaks.signal;
+    document.body.dataset.density = tweaks.density;
+    document.body.dataset.serif = tweaks.serif ? 'on' : 'off';
+  }, [tweaks]);
+
+  React.useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.type === '__activate_edit_mode')   setTweaksOn(true);
+      if (e.data?.type === '__deactivate_edit_mode') setTweaksOn(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({ type:'__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  // persist tweak changes back to disk
+  const setTPersist = (next) => {
+    setT(next);
+    window.parent.postMessage({ type:'__edit_mode_set_keys', edits: next }, '*');
+  };
+
+  if (!unlocked) {
+    return <LoginScreen onUnlock={() => setUnlocked(true)} />;
+  }
+
+  return (
+    <>
+      <DesignCanvas>
+        <DCSection id="booth" title="01 · Booth — self capture" subtitle="Tablet at the table. Email in, Jude Law out.">
+          <DCArtboard id="booth-form" label="A · Capture form" width={402} height={874}>
+            <BoothArtboard tweaks={tweaks} stepOverride="form"/>
+          </DCArtboard>
+          <DCArtboard id="booth-jude" label="B · Jude moment" width={402} height={874}>
+            <BoothArtboard tweaks={tweaks} stepOverride="jude"/>
+          </DCArtboard>
+          <DCArtboard id="booth-done" label="C · Confirmation" width={402} height={874}>
+            <BoothArtboard tweaks={tweaks} stepOverride="done"/>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="rep" title="02 · Sales rep — on the floor" subtitle="Pick event, find attendee, log the quality in two taps.">
+          <DCArtboard id="rep-picker" label="A · Event picker" width={402} height={874}>
+            <RepArtboard tweaks={tweaks} screenOverride="picker"/>
+          </DCArtboard>
+          <DCArtboard id="rep-list" label="B · Attendee list" width={402} height={874}>
+            <RepArtboard tweaks={tweaks} screenOverride="list"/>
+          </DCArtboard>
+          <DCArtboard id="rep-log" label="C · Quick-log sheet" width={402} height={874}>
+            <RepArtboard tweaks={tweaks} screenOverride="list" openFirst/>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="manager" title="03 · Manager — live dashboard" subtitle="Desk view during the event. Every lead appears the moment reps log it.">
+          <DCArtboard id="mgr-dash" label="A · LegalXchange Munich" width={1200} height={820}>
+            <ManagerArtboard tweaks={tweaks}/>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="admin" title="04 · Admin — the workbench" subtitle="Manage events, roll up attendee lists, edit leads after the fact.">
+          <DCArtboard id="admin-events" label="A · Events" width={1200} height={820}>
+            <AdminArtboard tweaks={tweaks} tabOverride="events"/>
+          </DCArtboard>
+          <DCArtboard id="admin-attendees" label="B · Attendees" width={1200} height={820}>
+            <AdminArtboard tweaks={tweaks} tabOverride="attendees"/>
+          </DCArtboard>
+          <DCArtboard id="admin-leads" label="C · Leads" width={1200} height={820}>
+            <AdminArtboard tweaks={tweaks} tabOverride="leads"/>
+          </DCArtboard>
+          <DCArtboard id="admin-booth" label="D · Booth captures" width={1200} height={820}>
+            <AdminArtboard tweaks={tweaks} tabOverride="booth"/>
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+      {tweaksOn && <Tweaks tweaks={tweaks} setT={setTPersist}/>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+</body>
+</html>
