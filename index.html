@@ -248,6 +248,8 @@ body {
 #boothContent { flex:1; display:flex; flex-direction:column; min-height:0; }
 .booth-topbar { padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center; }
 .booth-form { flex:1; display:flex; flex-direction:column; padding:44px 28px 24px; overflow:auto; }
+.booth-form.align-center { justify-content:center; padding-top:24px; padding-bottom:24px; }
+.booth-form.align-bottom { justify-content:flex-end; padding-top:24px; padding-bottom:48px; }
 .booth-heading { font-family:'Noto Serif',ui-serif,Georgia,serif; font-size:38px; line-height:44px; margin:0 0 10px; font-weight:500; letter-spacing:-0.02em; color:#00311C; }
 .booth-sub { font-size:15px; line-height:22px; color:#595959; margin:0 0 28px; }
 .booth-cta { background: var(--color-brand-gray3); color: #1c1c1c; border-color: rgba(0,0,0,.08); }
@@ -872,10 +874,15 @@ function defaultBoothDesign(){
     heading: "There's him looking at you.",
     subhead: "Drop your email. We'll send a short film from Jude — and get in touch about Legora.",
     cta: 'Submit →',
+    formContentAlign: 'top',   // 'top' | 'center' | 'bottom'
     filmLine1: "There's him looking at you,",
     filmLine2: "you looking at him,",
     filmLine3: "him looking at Legora.",
     filmEyebrow: '',
+    textX: 5,   // % from left edge of hero
+    textY: 62,  // % from top edge of hero
+    qrX: 72,    // % from left edge of hero
+    qrY: 3,     // % from top edge of hero
     thanksHeadline: 'Got it.',
     thanksBody: 'The film is on its way to your inbox.\nSee you on the other side.',
     heroImage: '',
@@ -1170,9 +1177,10 @@ function boothSkip(){
 function renderBoothStep(evId, ev){
   const d = DB.getBoothDesign(evId);
   const wrap = document.getElementById('boothContent');
+  const formAlignClass = d.formContentAlign === 'center' ? ' align-center' : d.formContentAlign === 'bottom' ? ' align-bottom' : '';
   if (boothStep === 'form'){
     wrap.innerHTML = `
-      <div class="booth-form">
+      <div class="booth-form${formAlignClass}">
         <h1 class="booth-heading">${esc(d.heading)}</h1>
         <p class="booth-sub">${esc(d.subhead)}</p>
         <label class="el-input" id="boothEmailWrap" style="margin-bottom:18px; height:48px;">
@@ -1201,16 +1209,18 @@ function renderBoothStep(evId, ev){
       ? `<img src="${esc(d.heroImage)}" alt="">`
       : `<div style="position:absolute; inset:0; background:linear-gradient(135deg, #005230 0%, #00311C 100%);"></div>`;
     const scanUrl = _boothActiveCapId ? boothScanUrl(evId, _boothActiveCapId, d) : (d.qrUrl || '#');
+    const tx = d.textX ?? 5,  ty = d.textY ?? 62;
+    const qx = d.qrX  ?? 72, qy = d.qrY  ?? 3;
     wrap.innerHTML = `
       <div class="booth-jude">
         <div class="booth-hero">
           ${heroBg}
           <div class="booth-hero-gradient"></div>
-          <div class="booth-hero-caption">
+          <div class="booth-hero-caption" style="position:absolute; left:${tx}%; top:${ty}%; max-width:72%; padding:12px 14px;">
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="film-line">${esc(d.filmLine1)}<br>${esc(d.filmLine2)}<br>${esc(d.filmLine3)}</div>
           </div>
-          ${d.showQR ? `<a href="${esc(scanUrl)}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none;" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</a>` : ''}
+          ${d.showQR ? `<a href="${esc(scanUrl)}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none; position:absolute; left:${qx}%; top:${qy}%;" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</a>` : ''}
         </div>
         <div style="margin-top:16px; text-align:center;">
           <div class="el-eyebrow" style="margin-bottom:6px;">SCAN TO WATCH THE FILM</div>
@@ -1440,20 +1450,20 @@ function openQuickLog(attendeeId, existingLead){
   const isEdit = !!existingLead;
   let rating = isEdit ? existingLead.rating : null;
   let notes  = isEdit ? (existingLead.notes || '') : '';
-  const close = () => { document.body.removeChild(root); };
+  let email  = isEdit ? (existingLead.attendeeEmail || att.email || '') : (att.email || '');
+  let _submitted = false;  // guard against double-submit
+  const close = () => { if (root.parentNode) root.parentNode.removeChild(root); };
   const root = h('div', { class:'sheet-backdrop', onclick: close });
   const card = h('div', { class:'sheet-card', onclick: e => e.stopPropagation() });
   root.appendChild(card);
   card.innerHTML = `
     <div class="sheet-grabber"></div>
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-      ${avatarHtml(att.first+' '+att.last, 40)}
-      <div style="flex:1; min-width:0;">
-        <div class="serif" style="font-size:20px; font-weight:500; letter-spacing:-0.01em;">${esc(att.first)} ${esc(att.last)}</div>
-        <div style="font-size:12px; color:#6b6b6b;">${esc(att.title||'')}${att.title&&att.company?' · ':''}${esc(att.company||'')}</div>
-      </div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+      <div class="el-eyebrow">${isEdit ? 'EDIT LEAD' : 'LOG LEAD'}</div>
       <button class="el-btn el-btn-ghost" style="width:28px; height:28px; padding:0; justify-content:center;" id="qlClose">${ICONS.close}</button>
     </div>
+    <div class="el-eyebrow" style="margin-bottom:6px;">EMAIL</div>
+    <label class="el-input" style="margin-bottom:16px; height:44px;">${ICONS.mail}<input id="qlEmail" type="email" placeholder="name@example.com" value="${esc(email)}" autocomplete="email"></label>
     <div class="el-eyebrow" style="margin-bottom:10px;">LEAD QUALITY</div>
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:16px;" id="qlPads">
       <div class="el-rating-pad${rating==='hot'?' sel-hot':''}" data-r="hot">${ICONS.fire}<span>Hot</span></div>
@@ -1467,6 +1477,7 @@ function openQuickLog(attendeeId, existingLead){
     <button id="qlSubmit" class="el-btn el-btn-xl el-btn-block el-btn-primary" ${rating?'':'disabled style="opacity:.4;"'}>${isEdit ? 'Update lead' : 'Log lead'}</button>`;
   document.body.appendChild(root);
   card.querySelector('#qlClose').onclick = close;
+  card.querySelector('#qlEmail').oninput = e => { email = e.target.value.trim(); };
   card.querySelectorAll('#qlPads .el-rating-pad').forEach(pad => {
     pad.onclick = () => {
       rating = pad.dataset.r;
@@ -1478,7 +1489,10 @@ function openQuickLog(attendeeId, existingLead){
   });
   card.querySelector('#qlNotes').oninput = e => notes = e.target.value;
   card.querySelector('#qlSubmit').onclick = () => {
-    if (!rating) return;
+    if (!rating || _submitted) return;
+    _submitted = true;
+    // Close first so the sheet disappears immediately and can't be double-clicked.
+    close();
     const lead = {
       id: isEdit ? existingLead.id : uid('l'),
       attendeeId: att.id,
@@ -1491,7 +1505,7 @@ function openQuickLog(attendeeId, existingLead){
       attendeeLast: att.last || '',
       attendeeCompany: att.company || '',
       attendeeTitle: att.title || '',
-      attendeeEmail: att.email || '',
+      attendeeEmail: email,
       repName: rep ? rep.name : ''
     };
     const leads = DB.getLeads(evId);
@@ -1504,7 +1518,6 @@ function openQuickLog(attendeeId, existingLead){
     DB.saveLeads(evId, leads);
     if (FB.ready()) FB.set('leads/' + evId + '/' + lead.id, lead);
     postLeadToWebhook(lead, att, evId, isEdit);
-    close();
     showToast(isEdit ? 'Lead updated' : 'Lead logged');
     renderRepList();
   };
@@ -2323,7 +2336,10 @@ function renderAdminDesigner(main){
         <h1 class="admin-h1">Booth designer</h1>
         <p class="admin-subtext">Editing booth design for <strong>${esc((ev&&ev.name)||'')}</strong>. Changes sync live to this event's booth.</p>
       </div>
-      <button class="el-btn el-btn-ghost" onclick="admResetDesign()">Reset to default</button>
+      <div style="display:flex; gap:8px;">
+        <button class="el-btn el-btn-primary" onclick="admSaveDesignToast()">Save design</button>
+        <button class="el-btn el-btn-ghost" onclick="admResetDesign()">Reset to default</button>
+      </div>
     </div>
     <div style="display:grid; grid-template-columns: 1fr 440px; gap:36px; align-items:flex-start;" id="designGrid">
       <div class="el-card" style="padding:24px 26px;">
@@ -2331,6 +2347,7 @@ function renderAdminDesigner(main){
           ${designerField('HEADLINE', designerInput('heading', d.heading, "There's him looking at you."))}
           ${designerField('SUBTEXT', designerTextarea('subhead', d.subhead, 'Drop your email…'))}
           ${designerField('CTA BUTTON', designerInput('cta', d.cta, 'Submit →'))}
+          ${designerField('CONTENT POSITION', designerSegment('formContentAlign', d.formContentAlign||'top', [['top','Top'],['center','Center'],['bottom','Bottom']]), 'Vertical alignment of the headline and form fields.')}
         `)}
         ${designerSection('2 · Film screen', `
           ${designerField('EYEBROW', designerInput('filmEyebrow', d.filmEyebrow, 'e.g. NOW FILMING · NEW CAMPAIGN'))}
@@ -2346,6 +2363,7 @@ function renderAdminDesigner(main){
             </label>
           `)}
           ${designerField('QR CODE URL', designerInput('qrUrl', d.qrUrl, 'https://legora.com/film'), 'Where the QR sends visitors when scanned.')}
+          <div style="font-size:12px; color:#6b6b6b; background:#f5f3ee; border-radius:8px; padding:10px 12px; margin-top:-6px;">✦ Drag the text block and QR code directly in the preview to reposition them.</div>
         `)}
         ${designerSection('3 · Thank-you', `
           <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px;">
@@ -2388,6 +2406,15 @@ function renderAdminDesigner(main){
   main.querySelectorAll('[data-design-key]').forEach(el => {
     el.addEventListener('input', () => updateDesignField(el.dataset.designKey, el.value));
   });
+  main.querySelectorAll('[data-design-seg-key]').forEach(btn => {
+    btn.onclick = () => {
+      const cur = DB.getBoothDesign(designerEvId);
+      cur[btn.dataset.designSegKey] = btn.dataset.designSegVal;
+      persistDesign(cur);
+      renderAdmin();
+    };
+  });
+  setupDesignerDrag();
   main.querySelector('#qrToggle').onclick = () => {
     const cur = DB.getBoothDesign(designerEvId);
     cur.showQR = !cur.showQR;
@@ -2404,7 +2431,7 @@ function renderAdminDesigner(main){
     fr.onload = () => { const cur = DB.getBoothDesign(designerEvId); cur.heroImage = fr.result; persistDesign(cur); renderAdmin(); };
     fr.readAsDataURL(f);
   };
-  redrawDesignerPreview();
+  redrawDesignerPreview(); setupDesignerDrag();
 }
 function designerSection(title, body){
   return `<div style="font-size:11px; font-weight:550; letter-spacing:.06em; text-transform:uppercase; color:#6b6b6b; margin-bottom:16px;">${esc(title)}</div>${body}<div style="height:1px; background:rgba(0,0,0,.06); margin:18px 0 22px;"></div>`;
@@ -2418,6 +2445,13 @@ function designerInput(key, val, placeholder){
 function designerTextarea(key, val, placeholder){
   return `<label class="el-input" style="width:100%; height:auto; align-items:stretch; padding:10px 12px;"><textarea data-design-key="${esc(key)}" placeholder="${esc(placeholder||'')}" rows="3" style="width:100%; border:0; outline:0; background:transparent; font:inherit; color:inherit; resize:vertical; min-height:60px;">${esc(val||'')}</textarea></label>`;
 }
+// Segmented button group that writes directly to the design on click.
+function designerSegment(key, current, options){
+  return `<div style="display:flex; gap:4px; flex-wrap:wrap;">${options.map(([val, label]) =>
+    `<button class="el-btn el-btn-ghost" data-design-seg-key="${esc(key)}" data-design-seg-val="${esc(val)}"
+      style="font-size:11px; padding:4px 10px; flex:1;${current===val?' background:#1c1c1c; color:#fff; border-color:#1c1c1c;':''}">${esc(label)}</button>`
+  ).join('')}</div>`;
+}
 function updateDesignField(key, val){
   const cur = DB.getBoothDesign(designerEvId); cur[key] = val; persistDesign(cur);
   redrawDesignerPreview();
@@ -2426,6 +2460,12 @@ function persistDesign(d){
   if (!designerEvId) return;
   DB.saveBoothDesign(designerEvId, d);
   if (FB.ready()) FB.set('boothDesign/' + designerEvId, d);
+}
+function admSaveDesignToast(){
+  if (!designerEvId) return;
+  const cur = DB.getBoothDesign(designerEvId);
+  persistDesign(cur);
+  showToast('Booth design saved · synced to all devices');
 }
 function admResetDesign(){
   if (!designerEvId) return;
@@ -2438,7 +2478,7 @@ function admResetDesign(){
     onConfirm: () => { persistDesign(defaultBoothDesign()); renderAdmin(); },
   });
 }
-function setDesignerStep(s){ designerStep = s; redrawDesignerPreview(); }
+function setDesignerStep(s){ designerStep = s; redrawDesignerPreview(); setupDesignerDrag(); }
 function redrawDesignerPreview(){
   const wrap = document.getElementById('designPreviewBox');
   if (!wrap) return;
@@ -2458,10 +2498,60 @@ function redrawDesignerPreview(){
       ${designerStepPreview(d, designerStep)}
     </div>`;
 }
+function boothFormAlignStyle(align){
+  if (align === 'center') return 'flex:1; display:flex; flex-direction:column; padding:24px 28px; justify-content:center;';
+  if (align === 'bottom') return 'flex:1; display:flex; flex-direction:column; padding:24px 28px 48px; justify-content:flex-end;';
+  return 'flex:1; display:flex; flex-direction:column; padding:44px 28px 24px;';
+}
+// Drag state for the booth designer preview.
+let _drag = null;
+function setupDesignerDrag(){
+  const hero = document.getElementById('prevHero');
+  if (!hero) return;
+  ['prevText','prevQR'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const key = el.dataset.dragKey; // 'text' or 'qr'
+    el.style.cursor = 'grab';
+    const onStart = (cx, cy) => {
+      const heroRect = hero.getBoundingClientRect();
+      _drag = { key, heroRect, startCX: cx, startCY: cy,
+        startX: parseFloat(el.style.left), startY: parseFloat(el.style.top) };
+      el.style.cursor = 'grabbing';
+    };
+    const onMove = (cx, cy) => {
+      if (!_drag || _drag.key !== key) return;
+      const { heroRect, startCX, startCY, startX, startY } = _drag;
+      const nx = Math.max(0, Math.min(85, startX + (cx - startCX) / heroRect.width  * 100));
+      const ny = Math.max(0, Math.min(85, startY + (cy - startCY) / heroRect.height * 100));
+      el.style.left = nx + '%';
+      el.style.top  = ny + '%';
+    };
+    const onEnd = (cx, cy) => {
+      if (!_drag || _drag.key !== key) return;
+      const { heroRect, startCX, startCY, startX, startY } = _drag;
+      const nx = Math.max(0, Math.min(85, startX + (cx - startCX) / heroRect.width  * 100));
+      const ny = Math.max(0, Math.min(85, startY + (cy - startCY) / heroRect.height * 100));
+      _drag = null;
+      el.style.cursor = 'grab';
+      const cur = DB.getBoothDesign(designerEvId);
+      cur[key + 'X'] = Math.round(nx * 10) / 10;
+      cur[key + 'Y'] = Math.round(ny * 10) / 10;
+      persistDesign(cur);
+    };
+    el.addEventListener('mousedown',  e => { e.preventDefault(); onStart(e.clientX, e.clientY); });
+    el.addEventListener('touchstart', e => { e.preventDefault(); const t = e.touches[0]; onStart(t.clientX, t.clientY); }, {passive:false});
+    document.addEventListener('mousemove',  e => onMove(e.clientX, e.clientY));
+    document.addEventListener('mouseup',    e => onEnd(e.clientX, e.clientY));
+    document.addEventListener('touchmove',  e => { if (_drag) { e.preventDefault(); const t = e.touches[0]; onMove(t.clientX, t.clientY); } }, {passive:false});
+    document.addEventListener('touchend',   e => { const t = e.changedTouches[0]; onEnd(t.clientX, t.clientY); });
+  });
+}
 function designerStepPreview(d, step){
   if (step === 'form'){
+    const align = d.formContentAlign || 'top';
     return `
-      <div style="flex:1; display:flex; flex-direction:column; padding:44px 28px 24px;">
+      <div style="${boothFormAlignStyle(align)}">
         <h1 class="serif" style="font-size:38px; line-height:44px; margin:0 0 10px; font-weight:500; letter-spacing:-0.02em; color:#00311C;">${esc(d.heading||'')}</h1>
         <p style="font-size:15px; line-height:22px; color:#595959; margin:0 0 28px;">${esc(d.subhead||'')}</p>
         <label class="el-input" style="margin-bottom:18px; height:48px;">${ICONS.mail}<input placeholder="Email address" disabled></label>
@@ -2470,16 +2560,17 @@ function designerStepPreview(d, step){
   }
   if (step === 'jude'){
     const heroBg = d.heroImage ? `<img src="${esc(d.heroImage)}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center top;">` : `<div style="position:absolute; inset:0; background:linear-gradient(135deg, #005230 0%, #00311C 100%);"></div>`;
+    const tx = d.textX ?? 5,  ty = d.textY ?? 62;
+    const qx = d.qrX  ?? 72, qy = d.qrY  ?? 3;
     return `
       <div style="flex:1; display:flex; flex-direction:column; padding:20px 24px 28px; position:relative; overflow:hidden;">
-        <div style="position:relative; border-radius:14px; overflow:hidden; background:#1c1c1c; flex:1; min-height:0; display:flex; align-items:flex-end; box-shadow:0 30px 60px rgba(0,0,0,.15);">
+        <div id="prevHero" style="position:relative; border-radius:14px; overflow:hidden; background:#1c1c1c; flex:1; min-height:0; box-shadow:0 30px 60px rgba(0,0,0,.15);">
           ${heroBg}
-          <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.78) 100%);"></div>
-          <div style="position:relative; padding:20px 20px 22px; color:#fff; width:100%;">
-            ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
+          <div id="prevText" data-drag-key="text" style="position:absolute; left:${tx}%; top:${ty}%; max-width:70%; color:#fff; outline:1.5px dashed rgba(255,255,255,.5); border-radius:6px; padding:8px 10px; box-sizing:border-box; user-select:none;">
+            ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:6px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="serif" style="font-size:22px; line-height:28px; font-weight:500; letter-spacing:-0.01em;">${esc(d.filmLine1||'')}<br>${esc(d.filmLine2||'')}<br>${esc(d.filmLine3||'')}</div>
           </div>
-          ${d.showQR ? `<div style="position:absolute; top:14px; right:14px; background:#fff; padding:8px; border-radius:8px;">${realQR(d.qrUrl, 72)}</div>` : ''}
+          ${d.showQR ? `<div id="prevQR" data-drag-key="qr" style="position:absolute; left:${qx}%; top:${qy}%; background:#fff; padding:8px; border-radius:8px; outline:1.5px dashed rgba(0,0,0,.4); line-height:0; user-select:none;">${realQR(d.qrUrl, 72)}</div>` : ''}
         </div>
       </div>`;
   }
