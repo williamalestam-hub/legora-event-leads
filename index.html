@@ -1343,7 +1343,7 @@ function renderRepList(){
   filtered.forEach(a => {
     const logged = loggedIds.has(a.id);
     const lead = leads.find(l => l.attendeeId === a.id);
-    const row = h('div', { class:'rep-att-row' + (logged?' logged':''), onclick: () => { if (!logged) openQuickLog(a.id); } });
+    const row = h('div', { class:'rep-att-row' + (logged?' logged':''), onclick: () => openQuickLog(a.id, logged ? lead : null) });
     row.innerHTML = `
       ${avatarHtml(a.first + ' ' + a.last, 34)}
       <div style="flex:1; min-width:0;">
@@ -1385,13 +1385,15 @@ function walkInPrompt(){
 }
 
 // ═══════════════ QUICK LOG BOTTOM SHEET ═══════════════
-function openQuickLog(attendeeId){
+// existingLead: pass the existing lead object when editing; null/undefined for new.
+function openQuickLog(attendeeId, existingLead){
   const evId = DB.getActiveEventId();
   const rep = DB.getReps().find(r => r.id === DB.getActiveRepId());
   const att = DB.getAttendees(evId).find(a => a.id === attendeeId);
   if (!att) return;
-  let rating = null;
-  let notes = '';
+  const isEdit = !!existingLead;
+  let rating = isEdit ? existingLead.rating : null;
+  let notes  = isEdit ? (existingLead.notes || '') : '';
   const close = () => { document.body.removeChild(root); };
   const root = h('div', { class:'sheet-backdrop', onclick: close });
   const card = h('div', { class:'sheet-card', onclick: e => e.stopPropagation() });
@@ -1408,15 +1410,15 @@ function openQuickLog(attendeeId){
     </div>
     <div class="el-eyebrow" style="margin-bottom:10px;">LEAD QUALITY</div>
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:16px;" id="qlPads">
-      <div class="el-rating-pad" data-r="hot">${ICONS.fire}<span>Hot</span></div>
-      <div class="el-rating-pad" data-r="warm">${ICONS.sun}<span>Warm</span></div>
-      <div class="el-rating-pad" data-r="cold">${ICONS.snow}<span>Cold</span></div>
+      <div class="el-rating-pad${rating==='hot'?' sel-hot':''}" data-r="hot">${ICONS.fire}<span>Hot</span></div>
+      <div class="el-rating-pad${rating==='warm'?' sel-warm':''}" data-r="warm">${ICONS.sun}<span>Warm</span></div>
+      <div class="el-rating-pad${rating==='cold'?' sel-cold':''}" data-r="cold">${ICONS.snow}<span>Cold</span></div>
     </div>
     <div class="el-eyebrow" style="margin-bottom:8px;">NOTES</div>
     <label class="el-textarea" style="margin-bottom:16px;">
-      <textarea id="qlNotes" placeholder="What did you talk about? Next steps?" rows="3"></textarea>
+      <textarea id="qlNotes" placeholder="What did you talk about? Next steps?" rows="3">${esc(notes)}</textarea>
     </label>
-    <button id="qlSubmit" class="el-btn el-btn-xl el-btn-block el-btn-primary" disabled style="opacity:.4;">Log lead</button>`;
+    <button id="qlSubmit" class="el-btn el-btn-xl el-btn-block el-btn-primary" ${rating?'':'disabled style="opacity:.4;"'}>${isEdit ? 'Update lead' : 'Log lead'}</button>`;
   document.body.appendChild(root);
   card.querySelector('#qlClose').onclick = close;
   card.querySelectorAll('#qlPads .el-rating-pad').forEach(pad => {
@@ -1432,14 +1434,13 @@ function openQuickLog(attendeeId){
   card.querySelector('#qlSubmit').onclick = () => {
     if (!rating) return;
     const lead = {
-      id: uid('l'),
+      id: isEdit ? existingLead.id : uid('l'),
       attendeeId: att.id,
       repId: rep ? rep.id : '',
       rating,
       notes: notes.trim(),
-      timestamp: Date.now(),
-      // Snapshot attendee details so the lead is self-contained
-      // (survives attendee deletions, sync lag, and device reloads).
+      timestamp: isEdit ? existingLead.timestamp : Date.now(),
+      updatedAt: isEdit ? Date.now() : undefined,
       attendeeFirst: att.first || '',
       attendeeLast: att.last || '',
       attendeeCompany: att.company || '',
@@ -1448,12 +1449,17 @@ function openQuickLog(attendeeId){
       repName: rep ? rep.name : ''
     };
     const leads = DB.getLeads(evId);
-    leads.unshift(lead);
+    if (isEdit) {
+      const idx = leads.findIndex(l => l.id === lead.id);
+      if (idx >= 0) leads[idx] = lead; else leads.unshift(lead);
+    } else {
+      leads.unshift(lead);
+    }
     DB.saveLeads(evId, leads);
     if (FB.ready()) FB.set('leads/' + evId + '/' + lead.id, lead);
-    postLeadToWebhook(lead, att, evId);
+    postLeadToWebhook(lead, att, evId, isEdit);
     close();
-    showToast('Lead logged');
+    showToast(isEdit ? 'Lead updated' : 'Lead logged');
     renderRepList();
   };
 }
@@ -1470,7 +1476,7 @@ function sendWebhook(url, payload){
   form.append('_json', JSON.stringify(payload));
   return fetch(url, { method: 'POST', mode: 'no-cors', body: form });
 }
-function postLeadToWebhook(lead, att, evId){
+function postLeadToWebhook(lead, att, evId, isUpdate){
   const url = DB.getWebhook();
   if (!url) return;
   const ev = DB.getEvents().find(e => e.id === evId);
@@ -1479,6 +1485,7 @@ function postLeadToWebhook(lead, att, evId){
     timestamp: new Date(lead.timestamp).toISOString(),
     event: ev ? ev.name : '',
     source: 'lead',
+    action: isUpdate ? 'updated' : 'created',
     repName: rep ? rep.name : '',
     firstName: att.first || '',
     lastName: att.last || '',
