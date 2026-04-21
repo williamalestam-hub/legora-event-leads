@@ -1313,6 +1313,84 @@
     transition: border-color 0.15s;
   }
   .lead-card:hover { border-color: var(--border2); }
+
+  /* ─── BOOTH ─── */
+  #booth-capture {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+    min-height: 100vh;
+  }
+
+  .booth-card {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .booth-card .logo { justify-content: center; margin-bottom: 2rem; }
+
+  .booth-card h1 {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .booth-card .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .booth-field {
+    margin-bottom: 14px;
+  }
+
+  .booth-field input {
+    font-size: 18px;
+    padding: 16px 18px;
+    border-radius: var(--radius);
+  }
+
+  .btn-booth-submit {
+    width: 100%;
+    padding: 18px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    margin-top: 8px;
+  }
+  .btn-booth-submit:hover  { opacity: 0.9; }
+  .btn-booth-submit:active { transform: scale(0.99); }
+  .btn-booth-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .booth-success {
+    display: none;
+    text-align: center;
+    padding: 2rem 0;
+  }
+  .booth-success-icon { font-size: 56px; margin-bottom: 12px; }
+  .booth-success h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .booth-success p  { color: var(--muted); font-size: 15px; }
+
+  .booth-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 99px;
+    background: rgba(122,154,132,0.2);
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
   .lead-card:active { transform: scale(0.99); }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -1353,6 +1431,52 @@
           <span class="role-btn-desc">Live dashboard — follow leads in real time</span>
         </div>
       </button>
+      <button class="role-btn" onclick="openBoothCapture()">
+        <div class="role-btn-icon">🖥️</div>
+        <div class="role-btn-text">
+          <span class="role-btn-label">Booth</span>
+          <span class="role-btn-desc">Event booth — quick email capture</span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- BOOTH CAPTURE SCREEN -->
+<div id="booth-capture" class="screen">
+  <div class="booth-card">
+    <div class="logo">
+      <svg class="logo-star" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M50 2C52 34,66 48,98 50C66 52,52 66,50 98C48 66,34 52,2 50C34 48,48 34,50 2Z" fill="currentColor"/>
+      </svg>
+      <span class="logo-wordmark">Legora</span>
+    </div>
+
+    <div id="boothForm">
+      <h1>Stay in touch</h1>
+      <p class="subtitle" id="boothEventLabel">Drop your email and we'll reach out</p>
+      <div class="booth-field">
+        <input type="text" id="boothFirst" placeholder="First name" autocomplete="given-name" />
+      </div>
+      <div class="booth-field">
+        <input type="text" id="boothLast" placeholder="Last name" autocomplete="family-name" />
+      </div>
+      <div class="booth-field">
+        <input type="email" id="boothEmail" placeholder="Email address *" autocomplete="email" />
+      </div>
+      <div class="booth-field">
+        <input type="text" id="boothCompany" placeholder="Company" autocomplete="organization" />
+      </div>
+      <button class="btn-booth-submit" id="boothSubmitBtn" onclick="submitBooth()">Submit →</button>
+      <div style="text-align:center;margin-top:20px;">
+        <button class="pin-back-link" onclick="goTo('role-select')">← Change role</button>
+      </div>
+    </div>
+
+    <div class="booth-success" id="boothSuccess">
+      <div class="booth-success-icon">✓</div>
+      <h2>Got it!</h2>
+      <p>We'll be in touch soon.</p>
     </div>
   </div>
 </div>
@@ -2455,6 +2579,7 @@
         <div class="lead-name">${lead.firstName} ${lead.lastName}</div>
         <div class="lead-meta">${[lead.company, lead.jobTitle].filter(Boolean).join(' · ')}</div>
       </div>
+      ${lead._source === 'booth' ? '<span class="booth-badge">BOOTH</span>' : ''}
       ${lead.rating ? `<span class="lead-rating ${ratingClass}">${lead.rating}</span>` : ''}
       <div class="lead-sync ${syncClass}" title="${lead._syncStatus}"></div>
     `;
@@ -2473,9 +2598,80 @@
         <div class="lead-name">${lead.firstName} ${lead.lastName}</div>
         <div class="lead-meta">${[lead.company, lead.jobTitle].filter(Boolean).join(' · ')}</div>
       </div>
+      ${lead._source === 'booth' ? '<span class="booth-badge">BOOTH</span>' : ''}
       ${lead.rating ? `<span class="lead-rating ${ratingClass}">${lead.rating}</span>` : ''}
       <div class="lead-sync ${syncClass}" title="${lead._syncStatus}"></div>
     `;
+  }
+
+  // ─── BOOTH ───
+  let boothEventId = '';
+
+  function openBoothCapture() {
+    const events = DB.getEvents();
+    if (!events.length) {
+      showToast('No events found — ask admin to add one', 'error');
+      return;
+    }
+    boothEventId = events[0].id;
+    const label = events.length === 1
+      ? events[0].name
+      : events.map((e, i) => `${i + 1}. ${e.name}`).join(' · ');
+    document.getElementById('boothEventLabel').textContent =
+      events.length === 1 ? `${events[0].name} · Drop your email` : label;
+    resetBoothForm();
+    goTo('booth-capture');
+  }
+
+  function resetBoothForm() {
+    ['boothFirst','boothLast','boothEmail','boothCompany'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('boothForm').style.display = '';
+    document.getElementById('boothSuccess').style.display = 'none';
+    document.getElementById('boothSubmitBtn').disabled = false;
+    setTimeout(() => document.getElementById('boothEmail').focus(), 300);
+  }
+
+  async function submitBooth() {
+    const email = document.getElementById('boothEmail').value.trim();
+    if (!email) { showToast('Email is required', 'error'); return; }
+    const firstName = document.getElementById('boothFirst').value.trim() || 'Booth';
+    const lastName  = document.getElementById('boothLast').value.trim()  || 'Lead';
+    const company   = document.getElementById('boothCompany').value.trim();
+
+    const events = DB.getEvents();
+    if (events.length > 1) {
+      boothEventId = events[0].id;
+    }
+    const eventName = DB.getEvents().find(e => e.id === boothEventId)?.name || '';
+
+    const lead = {
+      timestamp:   new Date().toISOString(),
+      event:       eventName,
+      firstName, lastName, email, company,
+      jobTitle:    '',
+      lawyers:     '',
+      phone:       '',
+      rating:      '',
+      notes:       '',
+      repName:     'Booth',
+      _source:     'booth',
+      id:          Date.now().toString() + Math.random().toString(36).slice(2),
+    };
+
+    document.getElementById('boothSubmitBtn').disabled = true;
+    const status = await postLead(lead);
+    lead._syncStatus = status;
+
+    const eventLeads = DB.getLeads(boothEventId);
+    eventLeads.push(lead);
+    DB.saveLeads(boothEventId, eventLeads);
+    if (Firebase.ready()) Firebase.set('leads/' + boothEventId + '/' + lead.id, lead);
+
+    document.getElementById('boothForm').style.display = 'none';
+    document.getElementById('boothSuccess').style.display = 'block';
+    setTimeout(resetBoothForm, 2500);
   }
 
   // ─── EDIT LEAD ───
