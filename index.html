@@ -647,6 +647,15 @@ body {
 <script>
 // ═══════════════ CONSTANTS ═══════════════
 const ACCESS_PIN = '8889';
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAjuTzTz3SG8yF2Mx4BWVQUvYx_33GjH4s",
+  authDomain: "event-leads-90434.firebaseapp.com",
+  databaseURL: "https://event-leads-90434-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "event-leads-90434",
+  storageBucket: "event-leads-90434.firebasestorage.app",
+  messagingSenderId: "236202325874",
+  appId: "1:236202325874:web:d2546a4886e39ef96e4feb"
+};
 
 // ═══════════════ ICONS ═══════════════
 const ICONS = {
@@ -874,11 +883,10 @@ function setFbStatus(state, msg){
   txt.textContent = msg;
 }
 
-async function connectFirebase(cfgStr){
-  if (!cfgStr) return false;
+async function connectFirebase(cfg){
+  if (!cfg) return false;
   setFbStatus('', 'Connecting…');
-  if (!FB.init(cfgStr)) { setFbStatus('err', 'Invalid config'); return false; }
-  DB.saveFbConfig(cfgStr);
+  if (!FB.init(cfg)) { setFbStatus('err', 'Invalid config'); return false; }
   await pushLocalToFirebase();
   await pullFromFirebase();
   setupFirebaseListeners();
@@ -2065,24 +2073,12 @@ function designerStepPreview(d, step){
 }
 
 function renderAdminSettings(main){
-  const cfg = DB.getFbConfig();
   const hook = DB.getWebhook();
-  const status = FB.ready() ? 'connected' : (cfg ? 'config saved — reload to connect' : 'not configured');
+  const status = FB.ready() ? 'Live sync' : 'Connecting…';
   main.innerHTML = `
     <div style="max-width:720px;">
       <h2 class="serif" style="font-size:26px; font-weight:500; margin:0 0 6px; letter-spacing:-0.01em;">Settings</h2>
-      <p style="color:#6b6b6b; font-size:14px; margin:0 0 22px;">Backend sync and webhooks. Status: <span style="color:${FB.ready() ? '#1a7f4f' : '#9b6b17'}; font-weight:550;">${esc(status)}</span></p>
-      <div class="el-card" style="padding:22px 22px 18px; margin-bottom:18px;">
-        <div class="el-eyebrow" style="margin-bottom:8px;">Firebase Realtime Database</div>
-        <div style="font-size:13px; color:#6b6b6b; margin-bottom:14px;">Paste the Firebase config JSON from your Firebase Console → Project settings → Web app. Kept in localStorage on this device only.</div>
-        <label class="el-input" style="width:100%; height:auto; align-items:stretch; padding:10px 12px; margin-bottom:12px;">
-          <textarea id="fbCfgInput" rows="8" placeholder='{ "apiKey":"...", "databaseURL":"https://...firebaseio.com", "projectId":"..." }' style="width:100%; border:0; outline:0; background:transparent; font:12px/1.5 'JetBrains Mono', monospace; color:inherit; resize:vertical; min-height:120px;">${esc(cfg)}</textarea>
-        </label>
-        <div style="display:flex; gap:8px;">
-          <button class="el-btn el-btn-primary" onclick="admSaveFb()">Save and connect</button>
-          <button class="el-btn el-btn-ghost" onclick="admClearFb()">Clear</button>
-        </div>
-      </div>
+      <p style="color:#6b6b6b; font-size:14px; margin:0 0 22px;">Sync status: <span style="color:${FB.ready() ? '#1a7f4f' : '#9b6b17'}; font-weight:550;">${esc(status)}</span></p>
       <div class="el-card" style="padding:22px 22px 18px;">
         <div class="el-eyebrow" style="margin-bottom:8px;">Webhook (optional)</div>
         <div style="font-size:13px; color:#6b6b6b; margin-bottom:14px;">POST new leads and booth captures to this URL.</div>
@@ -2091,13 +2087,6 @@ function renderAdminSettings(main){
       </div>
     </div>`;
 }
-function admSaveFb(){
-  const v = document.getElementById('fbCfgInput').value.trim();
-  DB.saveFbConfig(v);
-  if (v) connectFirebase(v).then(() => renderAdmin()).catch(e => { alert('Firebase error: ' + e.message); renderAdmin(); });
-  else renderAdmin();
-}
-function admClearFb(){ DB.saveFbConfig(''); renderAdmin(); }
 function admSaveWebhook(){
   const v = document.getElementById('webhookInput').value.trim();
   DB.saveWebhook(v); renderAdmin();
@@ -2112,12 +2101,11 @@ function attachPinKeyboard(){
   });
 }
 function bootstrap(){
-  // Load Firebase config if saved
-  const cfg = DB.getFbConfig();
-  if (cfg) {
-    try { connectFirebase(cfg).catch(err => console.warn('Firebase connect failed:', err.message)); }
-    catch(e){ console.warn('Firebase init error:', e); }
-  }
+  // Drop any legacy user-entered config; the project is now baked-in.
+  try { localStorage.removeItem('le_fb_cfg'); } catch(e){}
+  // Auto-connect to the baked Firebase project (admins don't configure this).
+  try { connectFirebase(FIREBASE_CONFIG).catch(err => console.warn('Firebase connect failed:', err.message)); }
+  catch(e){ console.warn('Firebase init error:', e); }
   // Build PIN keypad + keyboard listener
   buildPinKeypad();
   attachPinKeyboard();
