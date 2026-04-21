@@ -886,6 +886,7 @@ function defaultBoothDesign(){
     thanksHeadline: 'Got it.',
     thanksBody: 'The film is on its way to your inbox.\nSee you on the other side.',
     heroImage: '',
+    formImage: '',
     showQR: true,
     qrUrl: 'https://legora.com',
   };
@@ -1179,15 +1180,25 @@ function renderBoothStep(evId, ev){
   const wrap = document.getElementById('boothContent');
   const formAlignClass = d.formContentAlign === 'center' ? ' align-center' : d.formContentAlign === 'bottom' ? ' align-bottom' : '';
   if (boothStep === 'form'){
-    wrap.innerHTML = `
-      <div class="booth-form${formAlignClass}">
+    const justifyMap = { center: 'center', bottom: 'flex-end', top: 'flex-start' };
+    const fJustify = justifyMap[d.formContentAlign] || 'flex-start';
+    const formFields = `
         <h1 class="booth-heading">${esc(d.heading)}</h1>
         <p class="booth-sub">${esc(d.subhead)}</p>
         <label class="el-input" id="boothEmailWrap" style="margin-bottom:18px; height:48px;">
           ${ICONS.mail}
           <input id="boothEmail" placeholder="Email address" type="email" autocomplete="email" value="${esc(boothEmail)}">
         </label>
-        <button id="boothSubmit" class="el-btn el-btn-xl el-btn-block booth-cta" style="opacity:.4; cursor:not-allowed;">${esc(d.cta)}</button>
+        <button id="boothSubmit" class="el-btn el-btn-xl el-btn-block booth-cta" style="opacity:.4; cursor:not-allowed;">${esc(d.cta)}</button>`;
+    wrap.innerHTML = d.formImage ? `
+      <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:220px; flex-shrink:0; background:url(${esc(d.formImage)}) center/cover;"></div>
+        <div style="flex:1; display:flex; flex-direction:column; padding:24px 28px; overflow:auto; justify-content:${fJustify};">
+          ${formFields}
+        </div>
+      </div>` : `
+      <div class="booth-form${formAlignClass}">
+        ${formFields}
       </div>`;
     const input = document.getElementById('boothEmail');
     const submit = document.getElementById('boothSubmit');
@@ -2348,6 +2359,23 @@ function renderAdminDesigner(main){
           ${designerField('SUBTEXT', designerTextarea('subhead', d.subhead, 'Drop your email…'))}
           ${designerField('CTA BUTTON', designerInput('cta', d.cta, 'Submit →'))}
           ${designerField('CONTENT POSITION', designerSegment('formContentAlign', d.formContentAlign||'top', [['top','Top'],['center','Center'],['bottom','Bottom']]), 'Vertical alignment of the headline and form fields.')}
+          ${designerField('FORM IMAGE', `
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;" id="formImgRow">
+              ${d.formImage ? `
+              <div style="position:relative; flex-shrink:0;">
+                <div style="width:72px; height:72px; border-radius:6px; border:2px solid #1c1c1c; background:url(${esc(d.formImage)}) center/cover; position:relative; overflow:hidden;">
+                  <span style="position:absolute; bottom:4px; left:0; right:0; text-align:center; font-size:9px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); font-weight:500;">Current</span>
+                </div>
+                <button id="removeFormImg" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:#1c1c1c; color:#fff; border:0; cursor:pointer; font-size:13px; line-height:18px; text-align:center; z-index:2; padding:0;">×</button>
+              </div>` : ''}
+              <button id="uploadFormImg" style="width:72px; height:72px; border-radius:6px; cursor:pointer; padding:0; border:1px dashed rgba(0,0,0,.25); background:rgba(0,0,0,.02); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:#595959; font-size:10px; flex-shrink:0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
+                Upload
+              </button>
+              <input type="file" id="formImgFile" accept="image/*" style="display:none;">
+            </div>
+          `, 'Optional image at the top of the form screen.')}
+          ${designerField('FORM IMAGE URL', designerInput('formImage', d.formImage||'', 'https://...'))}
         `)}
         ${designerSection('2 · Film screen', `
           ${designerField('EYEBROW', designerInput('filmEyebrow', d.filmEyebrow, 'e.g. NOW FILMING · NEW CAMPAIGN'))}
@@ -2378,9 +2406,12 @@ function renderAdminDesigner(main){
                 <span style="position:absolute; bottom:4px; left:0; right:0; text-align:center; font-size:9px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); font-weight:500;">Gradient</span>
               </button>
               ${d.heroImage ? `
-              <button class="hero-preset" data-src="${esc(d.heroImage)}" style="width:72px; height:96px; border-radius:6px; cursor:pointer; padding:0; border:2px solid #1c1c1c; background:url(${esc(d.heroImage)}) center/cover; position:relative; overflow:hidden;">
-                <span style="position:absolute; bottom:4px; left:0; right:0; text-align:center; font-size:9px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); font-weight:500;">Current</span>
-              </button>` : ''}
+              <div style="position:relative; flex-shrink:0;">
+                <button class="hero-preset" data-src="${esc(d.heroImage)}" style="width:72px; height:96px; border-radius:6px; cursor:pointer; padding:0; border:2px solid #1c1c1c; background:url(${esc(d.heroImage)}) center/cover; position:relative; overflow:hidden;">
+                  <span style="position:absolute; bottom:4px; left:0; right:0; text-align:center; font-size:9px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); font-weight:500;">Current</span>
+                </button>
+                <button id="removeHero" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:#1c1c1c; color:#fff; border:0; cursor:pointer; font-size:13px; line-height:18px; text-align:center; z-index:2; padding:0;">×</button>
+              </div>` : ''}
               <button id="uploadHero" style="width:72px; height:96px; border-radius:6px; cursor:pointer; padding:0; border:1px dashed rgba(0,0,0,.25); background:rgba(0,0,0,.02); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:#595959; font-size:10px;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
                 Upload
@@ -2431,6 +2462,20 @@ function renderAdminDesigner(main){
     fr.onload = () => { const cur = DB.getBoothDesign(designerEvId); cur.heroImage = fr.result; persistDesign(cur); renderAdmin(); };
     fr.readAsDataURL(f);
   };
+  main.querySelector('#removeHero')?.addEventListener('click', e => {
+    e.stopPropagation();
+    const cur = DB.getBoothDesign(designerEvId); cur.heroImage = ''; persistDesign(cur); renderAdmin();
+  });
+  main.querySelector('#uploadFormImg').onclick = () => main.querySelector('#formImgFile').click();
+  main.querySelector('#formImgFile').onchange = e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const fr = new FileReader();
+    fr.onload = () => { const cur = DB.getBoothDesign(designerEvId); cur.formImage = fr.result; persistDesign(cur); renderAdmin(); };
+    fr.readAsDataURL(f);
+  };
+  main.querySelector('#removeFormImg')?.addEventListener('click', () => {
+    const cur = DB.getBoothDesign(designerEvId); cur.formImage = ''; persistDesign(cur); renderAdmin();
+  });
   redrawDesignerPreview(); setupDesignerDrag();
 }
 function designerSection(title, body){
@@ -2550,12 +2595,25 @@ function setupDesignerDrag(){
 function designerStepPreview(d, step){
   if (step === 'form'){
     const align = d.formContentAlign || 'top';
+    const justifyMap = { center: 'center', bottom: 'flex-end', top: 'flex-start' };
+    const justify = justifyMap[align] || 'flex-start';
+    const formContent = `
+      <h1 class="serif" style="font-size:38px; line-height:44px; margin:0 0 10px; font-weight:500; letter-spacing:-0.02em; color:#00311C;">${esc(d.heading||'')}</h1>
+      <p style="font-size:15px; line-height:22px; color:#595959; margin:0 0 28px;">${esc(d.subhead||'')}</p>
+      <label class="el-input" style="margin-bottom:18px; height:48px;">${ICONS.mail}<input placeholder="Email address" disabled></label>
+      <button class="el-btn el-btn-xl el-btn-block" style="background:#E1DFDB; color:#1c1c1c; border-color:rgba(0,0,0,.08); opacity:.8;">${esc(d.cta||'')}</button>`;
+    if (d.formImage) {
+      return `
+        <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+          <div style="height:200px; flex-shrink:0; background:url(${esc(d.formImage)}) center/cover;"></div>
+          <div style="flex:1; display:flex; flex-direction:column; padding:24px 28px; overflow:auto; justify-content:${justify};">
+            ${formContent}
+          </div>
+        </div>`;
+    }
     return `
       <div style="${boothFormAlignStyle(align)}">
-        <h1 class="serif" style="font-size:38px; line-height:44px; margin:0 0 10px; font-weight:500; letter-spacing:-0.02em; color:#00311C;">${esc(d.heading||'')}</h1>
-        <p style="font-size:15px; line-height:22px; color:#595959; margin:0 0 28px;">${esc(d.subhead||'')}</p>
-        <label class="el-input" style="margin-bottom:18px; height:48px;">${ICONS.mail}<input placeholder="Email address" disabled></label>
-        <button class="el-btn el-btn-xl el-btn-block" style="background:#E1DFDB; color:#1c1c1c; border-color:rgba(0,0,0,.08); opacity:.8;">${esc(d.cta||'')}</button>
+        ${formContent}
       </div>`;
   }
   if (step === 'jude'){
