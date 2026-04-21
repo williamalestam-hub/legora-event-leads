@@ -1440,20 +1440,20 @@ function openQuickLog(attendeeId, existingLead){
   const isEdit = !!existingLead;
   let rating = isEdit ? existingLead.rating : null;
   let notes  = isEdit ? (existingLead.notes || '') : '';
-  const close = () => { document.body.removeChild(root); };
+  let email  = isEdit ? (existingLead.attendeeEmail || att.email || '') : (att.email || '');
+  let _submitted = false;  // guard against double-submit
+  const close = () => { if (root.parentNode) root.parentNode.removeChild(root); };
   const root = h('div', { class:'sheet-backdrop', onclick: close });
   const card = h('div', { class:'sheet-card', onclick: e => e.stopPropagation() });
   root.appendChild(card);
   card.innerHTML = `
     <div class="sheet-grabber"></div>
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-      ${avatarHtml(att.first+' '+att.last, 40)}
-      <div style="flex:1; min-width:0;">
-        <div class="serif" style="font-size:20px; font-weight:500; letter-spacing:-0.01em;">${esc(att.first)} ${esc(att.last)}</div>
-        <div style="font-size:12px; color:#6b6b6b;">${esc(att.title||'')}${att.title&&att.company?' · ':''}${esc(att.company||'')}</div>
-      </div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+      <div class="el-eyebrow">${isEdit ? 'EDIT LEAD' : 'LOG LEAD'}</div>
       <button class="el-btn el-btn-ghost" style="width:28px; height:28px; padding:0; justify-content:center;" id="qlClose">${ICONS.close}</button>
     </div>
+    <div class="el-eyebrow" style="margin-bottom:6px;">EMAIL</div>
+    <label class="el-input" style="margin-bottom:16px; height:44px;">${ICONS.mail}<input id="qlEmail" type="email" placeholder="name@example.com" value="${esc(email)}" autocomplete="email"></label>
     <div class="el-eyebrow" style="margin-bottom:10px;">LEAD QUALITY</div>
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:16px;" id="qlPads">
       <div class="el-rating-pad${rating==='hot'?' sel-hot':''}" data-r="hot">${ICONS.fire}<span>Hot</span></div>
@@ -1467,6 +1467,7 @@ function openQuickLog(attendeeId, existingLead){
     <button id="qlSubmit" class="el-btn el-btn-xl el-btn-block el-btn-primary" ${rating?'':'disabled style="opacity:.4;"'}>${isEdit ? 'Update lead' : 'Log lead'}</button>`;
   document.body.appendChild(root);
   card.querySelector('#qlClose').onclick = close;
+  card.querySelector('#qlEmail').oninput = e => { email = e.target.value.trim(); };
   card.querySelectorAll('#qlPads .el-rating-pad').forEach(pad => {
     pad.onclick = () => {
       rating = pad.dataset.r;
@@ -1478,7 +1479,10 @@ function openQuickLog(attendeeId, existingLead){
   });
   card.querySelector('#qlNotes').oninput = e => notes = e.target.value;
   card.querySelector('#qlSubmit').onclick = () => {
-    if (!rating) return;
+    if (!rating || _submitted) return;
+    _submitted = true;
+    // Close first so the sheet disappears immediately and can't be double-clicked.
+    close();
     const lead = {
       id: isEdit ? existingLead.id : uid('l'),
       attendeeId: att.id,
@@ -1491,7 +1495,7 @@ function openQuickLog(attendeeId, existingLead){
       attendeeLast: att.last || '',
       attendeeCompany: att.company || '',
       attendeeTitle: att.title || '',
-      attendeeEmail: att.email || '',
+      attendeeEmail: email,
       repName: rep ? rep.name : ''
     };
     const leads = DB.getLeads(evId);
@@ -1504,7 +1508,6 @@ function openQuickLog(attendeeId, existingLead){
     DB.saveLeads(evId, leads);
     if (FB.ready()) FB.set('leads/' + evId + '/' + lead.id, lead);
     postLeadToWebhook(lead, att, evId, isEdit);
-    close();
     showToast(isEdit ? 'Lead updated' : 'Lead logged');
     renderRepList();
   };
