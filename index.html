@@ -1211,9 +1211,12 @@ function submitBooth(evId){
   boothStep = 'jude';
   renderBooth();
   _boothTimers.forEach(clearTimeout);
+  // Hold the film/QR screen long enough for the prospect to grab their phone,
+  // unlock it, open the camera, and scan. Auto-advance after 12s; thanks screen
+  // then shows for 3s before returning to the form for the next capture.
   _boothTimers = [
-    setTimeout(() => { boothStep = 'done'; renderBooth(); }, 3200),
-    setTimeout(() => { boothStep = 'form'; boothEmail = ''; renderBooth(); }, 6200),
+    setTimeout(() => { boothStep = 'done'; renderBooth(); }, 12000),
+    setTimeout(() => { boothStep = 'form'; boothEmail = ''; renderBooth(); }, 15000),
   ];
 }
 
