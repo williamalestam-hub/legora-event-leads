@@ -1132,11 +1132,38 @@ function goAdmin(){ goTo('admin'); }
 let boothStep = 'form';
 let boothEmail = '';
 let _boothTimers = [];
+let _boothActiveCapId = '';      // id of the capture currently on-screen
+let _boothActiveScanPath = '';   // Firebase path we're listening for the scan on
 function renderBooth(){
   document.getElementById('boothMark').innerHTML = legoraMark(22);
   const evId = DB.getActiveEventId() || (DB.getEvents()[0] && DB.getEvents()[0].id);
   const ev = DB.getEvents().find(e => e.id === evId);
   renderBoothStep(evId, ev);
+}
+function boothScanUrl(evId, capId, design){
+  // QR routes back through our own app so we can detect the scan via Firebase.
+  // We also include the destination (to=) so the phone's redirect doesn't
+  // depend on another Firebase read succeeding — scan works offline-tolerant.
+  const to = (design && design.qrUrl) ? design.qrUrl : 'https://legora.com';
+  return `${location.origin}${location.pathname}?scan=${encodeURIComponent(capId)}&ev=${encodeURIComponent(evId)}&to=${encodeURIComponent(to)}`;
+}
+function boothCleanupScanListener(){
+  if (_boothActiveScanPath && FB.ready()) FB.off(_boothActiveScanPath);
+  _boothActiveScanPath = '';
+}
+function boothAdvanceToDone(){
+  if (boothStep !== 'jude') return;
+  _boothTimers.forEach(clearTimeout);
+  boothCleanupScanListener();
+  boothStep = 'done';
+  renderBooth();
+  _boothTimers = [
+    setTimeout(() => { boothStep = 'form'; boothEmail = ''; _boothActiveCapId = ''; renderBooth(); }, 3000),
+  ];
+}
+function boothSkip(){
+  // Manual exit on the film screen — kiosk attendant or prospect tapping Done.
+  boothAdvanceToDone();
 }
 function renderBoothStep(evId, ev){
   const d = DB.getBoothDesign(evId);
@@ -1171,6 +1198,7 @@ function renderBoothStep(evId, ev){
     const heroBg = d.heroImage
       ? `<img src="${esc(d.heroImage)}" alt="">`
       : `<div style="position:absolute; inset:0; background:linear-gradient(135deg, #005230 0%, #00311C 100%);"></div>`;
+    const scanUrl = _boothActiveCapId ? boothScanUrl(evId, _boothActiveCapId, d) : (d.qrUrl || '#');
     wrap.innerHTML = `
       <div class="booth-jude">
         <div class="booth-hero">
@@ -1180,12 +1208,13 @@ function renderBoothStep(evId, ev){
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="film-line">${esc(d.filmLine1)}<br>${esc(d.filmLine2)}<br>${esc(d.filmLine3)}</div>
           </div>
-          ${d.showQR ? `<a href="${esc(d.qrUrl||'#')}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none;" aria-label="Scan or tap to open ${esc(d.qrUrl||'')}">${realQR(d.qrUrl, 96)}</a>` : ''}
+          ${d.showQR ? `<a href="${esc(scanUrl)}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none;" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</a>` : ''}
         </div>
         <div style="margin-top:16px; text-align:center;">
           <div class="el-eyebrow" style="margin-bottom:6px;">SCAN TO WATCH THE FILM</div>
           <div style="font-size:13px; color:#595959;">Also sent to <span style="color:#00311C; font-weight:500;">${esc(boothEmail || 'your inbox')}</span></div>
         </div>
+        <button class="el-btn el-btn-ghost" onclick="boothSkip()" style="margin-top:14px; align-self:center; font-size:12px; color:#6b6b6b; padding:6px 14px;">Done</button>
       </div>`;
   } else if (boothStep === 'done'){
     wrap.innerHTML = `
@@ -1208,15 +1237,21 @@ function submitBooth(evId){
   DB.saveBooth(evId, list);
   if (FB.ready()) FB.set('boothCaptures/' + evId + '/' + cap.id, cap);
   postBoothToWebhook(cap, evId);
+  _boothActiveCapId = cap.id;
   boothStep = 'jude';
   renderBooth();
   _boothTimers.forEach(clearTimeout);
-  // Hold the film/QR screen long enough for the prospect to grab their phone,
-  // unlock it, open the camera, and scan. Auto-advance after 12s; thanks screen
-  // then shows for 3s before returning to the form for the next capture.
+  boothCleanupScanListener();
+  // Listen for the scan marker to auto-advance the moment someone scans the QR.
+  if (FB.ready()) {
+    const path = `scans/${evId}/${cap.id}`;
+    _boothActiveScanPath = path;
+    FB.on(path, val => { if (val) boothAdvanceToDone(); });
+  }
+  // Safety cap: if nobody scans and the attendant doesn't tap Done, reset the
+  // kiosk after 90s so it doesn't stay stuck on the film screen.
   _boothTimers = [
-    setTimeout(() => { boothStep = 'done'; renderBooth(); }, 12000),
-    setTimeout(() => { boothStep = 'form'; boothEmail = ''; renderBooth(); }, 15000),
+    setTimeout(() => boothAdvanceToDone(), 90000),
   ];
 }
 
@@ -2510,7 +2545,38 @@ function attachPinKeyboard(){
     else if (e.key === 'Backspace') { pinBack(); e.preventDefault(); }
   });
 }
-function bootstrap(){
+async function handleScanLanding(){
+  // When a prospect scans the booth QR with their phone, the URL includes
+  // ?scan=<capId>&ev=<evId>&to=<destUrl>. Write a scan marker to Firebase so
+  // the kiosk can auto-advance, then redirect to the admin-configured URL.
+  const params = new URLSearchParams(location.search);
+  const scanId = params.get('scan');
+  const scanEv = params.get('ev');
+  const toRaw  = params.get('to');
+  if (!scanId || !scanEv) return false;
+  document.body.innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; background:#f0eee9; font-family:Inter,system-ui,sans-serif; padding:24px;">
+      <div style="text-align:center;">
+        <div style="font-family:'Noto Serif',serif; font-size:24px; color:#00311C; margin-bottom:6px; font-weight:500;">One moment…</div>
+        <div style="color:#6b6b6b; font-size:14px;">Opening the film</div>
+      </div>
+    </div>`;
+  const dest = (toRaw && /^https?:\/\//.test(toRaw)) ? toRaw : 'https://legora.com';
+  const write = (async () => {
+    try {
+      if (FB.init(FIREBASE_CONFIG) && FB.ready()) {
+        await FB.db.ref('scans/' + scanEv + '/' + scanId).set({ timestamp: Date.now(), ua: navigator.userAgent });
+      }
+    } catch(e){ console.warn('scan write failed', e); }
+  })();
+  // Don't let a slow Firebase block the redirect — 1.5s max before we bail.
+  await Promise.race([write, new Promise(r => setTimeout(r, 1500))]);
+  location.replace(dest);
+  return true;
+}
+async function bootstrap(){
+  // Phone-scanned QR? Redirect and skip the PIN gate.
+  if (await handleScanLanding()) return;
   // Drop any legacy user-entered config; the project is now baked-in.
   try { localStorage.removeItem('le_fb_cfg'); } catch(e){}
   // Auto-connect to the baked Firebase project (admins don't configure this).
