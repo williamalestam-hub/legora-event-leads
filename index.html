@@ -248,6 +248,8 @@ body {
 #boothContent { flex:1; display:flex; flex-direction:column; min-height:0; }
 .booth-topbar { padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center; }
 .booth-form { flex:1; display:flex; flex-direction:column; padding:44px 28px 24px; overflow:auto; }
+.booth-form.align-center { justify-content:center; padding-top:24px; padding-bottom:24px; }
+.booth-form.align-bottom { justify-content:flex-end; padding-top:24px; padding-bottom:48px; }
 .booth-heading { font-family:'Noto Serif',ui-serif,Georgia,serif; font-size:38px; line-height:44px; margin:0 0 10px; font-weight:500; letter-spacing:-0.02em; color:#00311C; }
 .booth-sub { font-size:15px; line-height:22px; color:#595959; margin:0 0 28px; }
 .booth-cta { background: var(--color-brand-gray3); color: #1c1c1c; border-color: rgba(0,0,0,.08); }
@@ -872,10 +874,13 @@ function defaultBoothDesign(){
     heading: "There's him looking at you.",
     subhead: "Drop your email. We'll send a short film from Jude — and get in touch about Legora.",
     cta: 'Submit →',
+    formContentAlign: 'top',   // 'top' | 'center' | 'bottom'
     filmLine1: "There's him looking at you,",
     filmLine2: "you looking at him,",
     filmLine3: "him looking at Legora.",
     filmEyebrow: '',
+    textPosition: 'bottom',    // 'top' | 'center' | 'bottom'
+    qrPosition: 'top-right',   // 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
     thanksHeadline: 'Got it.',
     thanksBody: 'The film is on its way to your inbox.\nSee you on the other side.',
     heroImage: '',
@@ -1170,9 +1175,10 @@ function boothSkip(){
 function renderBoothStep(evId, ev){
   const d = DB.getBoothDesign(evId);
   const wrap = document.getElementById('boothContent');
+  const formAlignClass = d.formContentAlign === 'center' ? ' align-center' : d.formContentAlign === 'bottom' ? ' align-bottom' : '';
   if (boothStep === 'form'){
     wrap.innerHTML = `
-      <div class="booth-form">
+      <div class="booth-form${formAlignClass}">
         <h1 class="booth-heading">${esc(d.heading)}</h1>
         <p class="booth-sub">${esc(d.subhead)}</p>
         <label class="el-input" id="boothEmailWrap" style="margin-bottom:18px; height:48px;">
@@ -1201,16 +1207,20 @@ function renderBoothStep(evId, ev){
       ? `<img src="${esc(d.heroImage)}" alt="">`
       : `<div style="position:absolute; inset:0; background:linear-gradient(135deg, #005230 0%, #00311C 100%);"></div>`;
     const scanUrl = _boothActiveCapId ? boothScanUrl(evId, _boothActiveCapId, d) : (d.qrUrl || '#');
+    const textPos = d.textPosition || 'bottom';
+    const qrPos   = d.qrPosition   || 'top-right';
+    const heroAlign = textPos === 'top' ? 'flex-start' : textPos === 'center' ? 'center' : 'flex-end';
+    const qrInset   = boothQRStyle(qrPos);
     wrap.innerHTML = `
       <div class="booth-jude">
-        <div class="booth-hero">
+        <div class="booth-hero" style="align-items:${heroAlign};">
           ${heroBg}
-          <div class="booth-hero-gradient"></div>
+          <div class="booth-hero-gradient" style="${filmTextGradient(textPos)}"></div>
           <div class="booth-hero-caption">
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="film-line">${esc(d.filmLine1)}<br>${esc(d.filmLine2)}<br>${esc(d.filmLine3)}</div>
           </div>
-          ${d.showQR ? `<a href="${esc(scanUrl)}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none;" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</a>` : ''}
+          ${d.showQR ? `<a href="${esc(scanUrl)}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none; position:absolute; ${qrInset}" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</a>` : ''}
         </div>
         <div style="margin-top:16px; text-align:center;">
           <div class="el-eyebrow" style="margin-bottom:6px;">SCAN TO WATCH THE FILM</div>
@@ -2334,6 +2344,7 @@ function renderAdminDesigner(main){
           ${designerField('HEADLINE', designerInput('heading', d.heading, "There's him looking at you."))}
           ${designerField('SUBTEXT', designerTextarea('subhead', d.subhead, 'Drop your email…'))}
           ${designerField('CTA BUTTON', designerInput('cta', d.cta, 'Submit →'))}
+          ${designerField('CONTENT POSITION', designerSegment('formContentAlign', d.formContentAlign||'top', [['top','Top'],['center','Center'],['bottom','Bottom']]), 'Vertical alignment of the headline and form fields.')}
         `)}
         ${designerSection('2 · Film screen', `
           ${designerField('EYEBROW', designerInput('filmEyebrow', d.filmEyebrow, 'e.g. NOW FILMING · NEW CAMPAIGN'))}
@@ -2342,12 +2353,14 @@ function renderAdminDesigner(main){
             ${designerField('LINE 2', designerInput('filmLine2', d.filmLine2, ''))}
             ${designerField('LINE 3', designerInput('filmLine3', d.filmLine3, ''))}
           </div>
+          ${designerField('TEXT POSITION', designerSegment('textPosition', d.textPosition||'bottom', [['top','Top'],['center','Center'],['bottom','Bottom']]), 'Where the film title appears over the image.')}
           ${designerField('SHOW QR CODE', `
             <label class="el-input" id="qrToggle" style="cursor:pointer; user-select:none; width: fit-content; border:0; padding:0;">
               <span class="toggle ${d.showQR?'on':''}"><span class="knob"></span></span>
               <span style="font-size:13px; margin-left:10px;">QR is ${d.showQR?'visible':'hidden'}</span>
             </label>
           `)}
+          ${designerField('QR POSITION', designerSegment('qrPosition', d.qrPosition||'top-right', [['top-left','↖ Top left'],['top-right','↗ Top right'],['bottom-left','↙ Bottom left'],['bottom-right','↘ Bottom right']]), 'Corner where the QR code appears.')}
           ${designerField('QR CODE URL', designerInput('qrUrl', d.qrUrl, 'https://legora.com/film'), 'Where the QR sends visitors when scanned.')}
         `)}
         ${designerSection('3 · Thank-you', `
@@ -2391,6 +2404,14 @@ function renderAdminDesigner(main){
   main.querySelectorAll('[data-design-key]').forEach(el => {
     el.addEventListener('input', () => updateDesignField(el.dataset.designKey, el.value));
   });
+  main.querySelectorAll('[data-design-seg-key]').forEach(btn => {
+    btn.onclick = () => {
+      const cur = DB.getBoothDesign(designerEvId);
+      cur[btn.dataset.designSegKey] = btn.dataset.designSegVal;
+      persistDesign(cur);
+      renderAdmin();
+    };
+  });
   main.querySelector('#qrToggle').onclick = () => {
     const cur = DB.getBoothDesign(designerEvId);
     cur.showQR = !cur.showQR;
@@ -2420,6 +2441,13 @@ function designerInput(key, val, placeholder){
 }
 function designerTextarea(key, val, placeholder){
   return `<label class="el-input" style="width:100%; height:auto; align-items:stretch; padding:10px 12px;"><textarea data-design-key="${esc(key)}" placeholder="${esc(placeholder||'')}" rows="3" style="width:100%; border:0; outline:0; background:transparent; font:inherit; color:inherit; resize:vertical; min-height:60px;">${esc(val||'')}</textarea></label>`;
+}
+// Segmented button group that writes directly to the design on click.
+function designerSegment(key, current, options){
+  return `<div style="display:flex; gap:4px; flex-wrap:wrap;">${options.map(([val, label]) =>
+    `<button class="el-btn el-btn-ghost" data-design-seg-key="${esc(key)}" data-design-seg-val="${esc(val)}"
+      style="font-size:11px; padding:4px 10px; flex:1;${current===val?' background:#1c1c1c; color:#fff; border-color:#1c1c1c;':''}">${esc(label)}</button>`
+  ).join('')}</div>`;
 }
 function updateDesignField(key, val){
   const cur = DB.getBoothDesign(designerEvId); cur[key] = val; persistDesign(cur);
@@ -2461,10 +2489,30 @@ function redrawDesignerPreview(){
       ${designerStepPreview(d, designerStep)}
     </div>`;
 }
+function boothFormAlignStyle(align){
+  if (align === 'center') return 'flex:1; display:flex; flex-direction:column; padding:24px 28px; justify-content:center;';
+  if (align === 'bottom') return 'flex:1; display:flex; flex-direction:column; padding:24px 28px 48px; justify-content:flex-end;';
+  return 'flex:1; display:flex; flex-direction:column; padding:44px 28px 24px;'; // top
+}
+function boothTextAlignStyle(pos){
+  if (pos === 'top')    return 'align-items:flex-start; justify-content:flex-start;';
+  if (pos === 'center') return 'align-items:center; justify-content:center;';
+  return 'align-items:flex-end; justify-content:flex-end;'; // bottom
+}
+function boothQRStyle(pos){
+  const posMap = { 'top-left':'top:14px; left:14px;', 'top-right':'top:14px; right:14px;', 'bottom-left':'bottom:14px; left:14px;', 'bottom-right':'bottom:14px; right:14px;' };
+  return posMap[pos] || posMap['top-right'];
+}
+function filmTextGradient(pos){
+  if (pos === 'top')    return 'background:linear-gradient(180deg, rgba(0,0,0,.78) 0%, rgba(0,0,0,0) 40%);';
+  if (pos === 'center') return 'background:linear-gradient(180deg, rgba(0,0,0,.3) 0%, rgba(0,0,0,.55) 50%, rgba(0,0,0,.3) 100%);';
+  return 'background:linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.78) 100%);';
+}
 function designerStepPreview(d, step){
   if (step === 'form'){
+    const align = d.formContentAlign || 'top';
     return `
-      <div style="flex:1; display:flex; flex-direction:column; padding:44px 28px 24px;">
+      <div style="${boothFormAlignStyle(align)}">
         <h1 class="serif" style="font-size:38px; line-height:44px; margin:0 0 10px; font-weight:500; letter-spacing:-0.02em; color:#00311C;">${esc(d.heading||'')}</h1>
         <p style="font-size:15px; line-height:22px; color:#595959; margin:0 0 28px;">${esc(d.subhead||'')}</p>
         <label class="el-input" style="margin-bottom:18px; height:48px;">${ICONS.mail}<input placeholder="Email address" disabled></label>
@@ -2473,16 +2521,18 @@ function designerStepPreview(d, step){
   }
   if (step === 'jude'){
     const heroBg = d.heroImage ? `<img src="${esc(d.heroImage)}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center top;">` : `<div style="position:absolute; inset:0; background:linear-gradient(135deg, #005230 0%, #00311C 100%);"></div>`;
+    const textPos = d.textPosition || 'bottom';
+    const qrPos   = d.qrPosition   || 'top-right';
     return `
       <div style="flex:1; display:flex; flex-direction:column; padding:20px 24px 28px; position:relative; overflow:hidden;">
-        <div style="position:relative; border-radius:14px; overflow:hidden; background:#1c1c1c; flex:1; min-height:0; display:flex; align-items:flex-end; box-shadow:0 30px 60px rgba(0,0,0,.15);">
+        <div style="position:relative; border-radius:14px; overflow:hidden; background:#1c1c1c; flex:1; min-height:0; display:flex; ${boothTextAlignStyle(textPos)} box-shadow:0 30px 60px rgba(0,0,0,.15);">
           ${heroBg}
-          <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.78) 100%);"></div>
+          <div style="position:absolute; inset:0; ${filmTextGradient(textPos)}"></div>
           <div style="position:relative; padding:20px 20px 22px; color:#fff; width:100%;">
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="serif" style="font-size:22px; line-height:28px; font-weight:500; letter-spacing:-0.01em;">${esc(d.filmLine1||'')}<br>${esc(d.filmLine2||'')}<br>${esc(d.filmLine3||'')}</div>
           </div>
-          ${d.showQR ? `<div style="position:absolute; top:14px; right:14px; background:#fff; padding:8px; border-radius:8px;">${realQR(d.qrUrl, 72)}</div>` : ''}
+          ${d.showQR ? `<div style="position:absolute; ${boothQRStyle(qrPos)} background:#fff; padding:8px; border-radius:8px;">${realQR(d.qrUrl, 72)}</div>` : ''}
         </div>
       </div>`;
   }
