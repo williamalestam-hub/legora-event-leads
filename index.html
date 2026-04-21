@@ -879,8 +879,10 @@ function defaultBoothDesign(){
     filmLine2: "you looking at him,",
     filmLine3: "him looking at Legora.",
     filmEyebrow: '',
-    textPosition: 'bottom',    // 'top' | 'center' | 'bottom'
-    qrPosition: 'top-right',   // 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    textX: 5,   // % from left edge of hero
+    textY: 62,  // % from top edge of hero
+    qrX: 72,    // % from left edge of hero
+    qrY: 3,     // % from top edge of hero
     thanksHeadline: 'Got it.',
     thanksBody: 'The film is on its way to your inbox.\nSee you on the other side.',
     heroImage: '',
@@ -1207,20 +1209,18 @@ function renderBoothStep(evId, ev){
       ? `<img src="${esc(d.heroImage)}" alt="">`
       : `<div style="position:absolute; inset:0; background:linear-gradient(135deg, #005230 0%, #00311C 100%);"></div>`;
     const scanUrl = _boothActiveCapId ? boothScanUrl(evId, _boothActiveCapId, d) : (d.qrUrl || '#');
-    const textPos = d.textPosition || 'bottom';
-    const qrPos   = d.qrPosition   || 'top-right';
-    const heroAlign = textPos === 'top' ? 'flex-start' : textPos === 'center' ? 'center' : 'flex-end';
-    const qrInset   = boothQRStyle(qrPos);
+    const tx = d.textX ?? 5,  ty = d.textY ?? 62;
+    const qx = d.qrX  ?? 72, qy = d.qrY  ?? 3;
     wrap.innerHTML = `
       <div class="booth-jude">
-        <div class="booth-hero" style="align-items:${heroAlign};">
+        <div class="booth-hero">
           ${heroBg}
-          <div class="booth-hero-gradient" style="${filmTextGradient(textPos)}"></div>
-          <div class="booth-hero-caption">
+          <div class="booth-hero-gradient"></div>
+          <div class="booth-hero-caption" style="position:absolute; left:${tx}%; top:${ty}%; max-width:72%; padding:12px 14px;">
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="film-line">${esc(d.filmLine1)}<br>${esc(d.filmLine2)}<br>${esc(d.filmLine3)}</div>
           </div>
-          ${d.showQR ? `<a href="${esc(scanUrl)}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none; position:absolute; ${qrInset}" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</a>` : ''}
+          ${d.showQR ? `<a href="${esc(scanUrl)}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none; position:absolute; left:${qx}%; top:${qy}%;" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</a>` : ''}
         </div>
         <div style="margin-top:16px; text-align:center;">
           <div class="el-eyebrow" style="margin-bottom:6px;">SCAN TO WATCH THE FILM</div>
@@ -2336,7 +2336,10 @@ function renderAdminDesigner(main){
         <h1 class="admin-h1">Booth designer</h1>
         <p class="admin-subtext">Editing booth design for <strong>${esc((ev&&ev.name)||'')}</strong>. Changes sync live to this event's booth.</p>
       </div>
-      <button class="el-btn el-btn-ghost" onclick="admResetDesign()">Reset to default</button>
+      <div style="display:flex; gap:8px;">
+        <button class="el-btn el-btn-primary" onclick="admSaveDesignToast()">Save design</button>
+        <button class="el-btn el-btn-ghost" onclick="admResetDesign()">Reset to default</button>
+      </div>
     </div>
     <div style="display:grid; grid-template-columns: 1fr 440px; gap:36px; align-items:flex-start;" id="designGrid">
       <div class="el-card" style="padding:24px 26px;">
@@ -2353,15 +2356,14 @@ function renderAdminDesigner(main){
             ${designerField('LINE 2', designerInput('filmLine2', d.filmLine2, ''))}
             ${designerField('LINE 3', designerInput('filmLine3', d.filmLine3, ''))}
           </div>
-          ${designerField('TEXT POSITION', designerSegment('textPosition', d.textPosition||'bottom', [['top','Top'],['center','Center'],['bottom','Bottom']]), 'Where the film title appears over the image.')}
           ${designerField('SHOW QR CODE', `
             <label class="el-input" id="qrToggle" style="cursor:pointer; user-select:none; width: fit-content; border:0; padding:0;">
               <span class="toggle ${d.showQR?'on':''}"><span class="knob"></span></span>
               <span style="font-size:13px; margin-left:10px;">QR is ${d.showQR?'visible':'hidden'}</span>
             </label>
           `)}
-          ${designerField('QR POSITION', designerSegment('qrPosition', d.qrPosition||'top-right', [['top-left','↖ Top left'],['top-right','↗ Top right'],['bottom-left','↙ Bottom left'],['bottom-right','↘ Bottom right']]), 'Corner where the QR code appears.')}
           ${designerField('QR CODE URL', designerInput('qrUrl', d.qrUrl, 'https://legora.com/film'), 'Where the QR sends visitors when scanned.')}
+          <div style="font-size:12px; color:#6b6b6b; background:#f5f3ee; border-radius:8px; padding:10px 12px; margin-top:-6px;">✦ Drag the text block and QR code directly in the preview to reposition them.</div>
         `)}
         ${designerSection('3 · Thank-you', `
           <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px;">
@@ -2412,6 +2414,7 @@ function renderAdminDesigner(main){
       renderAdmin();
     };
   });
+  setupDesignerDrag();
   main.querySelector('#qrToggle').onclick = () => {
     const cur = DB.getBoothDesign(designerEvId);
     cur.showQR = !cur.showQR;
@@ -2428,7 +2431,7 @@ function renderAdminDesigner(main){
     fr.onload = () => { const cur = DB.getBoothDesign(designerEvId); cur.heroImage = fr.result; persistDesign(cur); renderAdmin(); };
     fr.readAsDataURL(f);
   };
-  redrawDesignerPreview();
+  redrawDesignerPreview(); setupDesignerDrag();
 }
 function designerSection(title, body){
   return `<div style="font-size:11px; font-weight:550; letter-spacing:.06em; text-transform:uppercase; color:#6b6b6b; margin-bottom:16px;">${esc(title)}</div>${body}<div style="height:1px; background:rgba(0,0,0,.06); margin:18px 0 22px;"></div>`;
@@ -2458,6 +2461,12 @@ function persistDesign(d){
   DB.saveBoothDesign(designerEvId, d);
   if (FB.ready()) FB.set('boothDesign/' + designerEvId, d);
 }
+function admSaveDesignToast(){
+  if (!designerEvId) return;
+  const cur = DB.getBoothDesign(designerEvId);
+  persistDesign(cur);
+  showToast('Booth design saved · synced to all devices');
+}
 function admResetDesign(){
   if (!designerEvId) return;
   confirmModal({
@@ -2469,7 +2478,7 @@ function admResetDesign(){
     onConfirm: () => { persistDesign(defaultBoothDesign()); renderAdmin(); },
   });
 }
-function setDesignerStep(s){ designerStep = s; redrawDesignerPreview(); }
+function setDesignerStep(s){ designerStep = s; redrawDesignerPreview(); setupDesignerDrag(); }
 function redrawDesignerPreview(){
   const wrap = document.getElementById('designPreviewBox');
   if (!wrap) return;
@@ -2492,21 +2501,51 @@ function redrawDesignerPreview(){
 function boothFormAlignStyle(align){
   if (align === 'center') return 'flex:1; display:flex; flex-direction:column; padding:24px 28px; justify-content:center;';
   if (align === 'bottom') return 'flex:1; display:flex; flex-direction:column; padding:24px 28px 48px; justify-content:flex-end;';
-  return 'flex:1; display:flex; flex-direction:column; padding:44px 28px 24px;'; // top
+  return 'flex:1; display:flex; flex-direction:column; padding:44px 28px 24px;';
 }
-function boothTextAlignStyle(pos){
-  if (pos === 'top')    return 'align-items:flex-start; justify-content:flex-start;';
-  if (pos === 'center') return 'align-items:center; justify-content:center;';
-  return 'align-items:flex-end; justify-content:flex-end;'; // bottom
-}
-function boothQRStyle(pos){
-  const posMap = { 'top-left':'top:14px; left:14px;', 'top-right':'top:14px; right:14px;', 'bottom-left':'bottom:14px; left:14px;', 'bottom-right':'bottom:14px; right:14px;' };
-  return posMap[pos] || posMap['top-right'];
-}
-function filmTextGradient(pos){
-  if (pos === 'top')    return 'background:linear-gradient(180deg, rgba(0,0,0,.78) 0%, rgba(0,0,0,0) 40%);';
-  if (pos === 'center') return 'background:linear-gradient(180deg, rgba(0,0,0,.3) 0%, rgba(0,0,0,.55) 50%, rgba(0,0,0,.3) 100%);';
-  return 'background:linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.78) 100%);';
+// Drag state for the booth designer preview.
+let _drag = null;
+function setupDesignerDrag(){
+  const hero = document.getElementById('prevHero');
+  if (!hero) return;
+  ['prevText','prevQR'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const key = el.dataset.dragKey; // 'text' or 'qr'
+    el.style.cursor = 'grab';
+    const onStart = (cx, cy) => {
+      const heroRect = hero.getBoundingClientRect();
+      _drag = { key, heroRect, startCX: cx, startCY: cy,
+        startX: parseFloat(el.style.left), startY: parseFloat(el.style.top) };
+      el.style.cursor = 'grabbing';
+    };
+    const onMove = (cx, cy) => {
+      if (!_drag || _drag.key !== key) return;
+      const { heroRect, startCX, startCY, startX, startY } = _drag;
+      const nx = Math.max(0, Math.min(85, startX + (cx - startCX) / heroRect.width  * 100));
+      const ny = Math.max(0, Math.min(85, startY + (cy - startCY) / heroRect.height * 100));
+      el.style.left = nx + '%';
+      el.style.top  = ny + '%';
+    };
+    const onEnd = (cx, cy) => {
+      if (!_drag || _drag.key !== key) return;
+      const { heroRect, startCX, startCY, startX, startY } = _drag;
+      const nx = Math.max(0, Math.min(85, startX + (cx - startCX) / heroRect.width  * 100));
+      const ny = Math.max(0, Math.min(85, startY + (cy - startCY) / heroRect.height * 100));
+      _drag = null;
+      el.style.cursor = 'grab';
+      const cur = DB.getBoothDesign(designerEvId);
+      cur[key + 'X'] = Math.round(nx * 10) / 10;
+      cur[key + 'Y'] = Math.round(ny * 10) / 10;
+      persistDesign(cur);
+    };
+    el.addEventListener('mousedown',  e => { e.preventDefault(); onStart(e.clientX, e.clientY); });
+    el.addEventListener('touchstart', e => { e.preventDefault(); const t = e.touches[0]; onStart(t.clientX, t.clientY); }, {passive:false});
+    document.addEventListener('mousemove',  e => onMove(e.clientX, e.clientY));
+    document.addEventListener('mouseup',    e => onEnd(e.clientX, e.clientY));
+    document.addEventListener('touchmove',  e => { if (_drag) { e.preventDefault(); const t = e.touches[0]; onMove(t.clientX, t.clientY); } }, {passive:false});
+    document.addEventListener('touchend',   e => { const t = e.changedTouches[0]; onEnd(t.clientX, t.clientY); });
+  });
 }
 function designerStepPreview(d, step){
   if (step === 'form'){
@@ -2521,18 +2560,17 @@ function designerStepPreview(d, step){
   }
   if (step === 'jude'){
     const heroBg = d.heroImage ? `<img src="${esc(d.heroImage)}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center top;">` : `<div style="position:absolute; inset:0; background:linear-gradient(135deg, #005230 0%, #00311C 100%);"></div>`;
-    const textPos = d.textPosition || 'bottom';
-    const qrPos   = d.qrPosition   || 'top-right';
+    const tx = d.textX ?? 5,  ty = d.textY ?? 62;
+    const qx = d.qrX  ?? 72, qy = d.qrY  ?? 3;
     return `
       <div style="flex:1; display:flex; flex-direction:column; padding:20px 24px 28px; position:relative; overflow:hidden;">
-        <div style="position:relative; border-radius:14px; overflow:hidden; background:#1c1c1c; flex:1; min-height:0; display:flex; ${boothTextAlignStyle(textPos)} box-shadow:0 30px 60px rgba(0,0,0,.15);">
+        <div id="prevHero" style="position:relative; border-radius:14px; overflow:hidden; background:#1c1c1c; flex:1; min-height:0; box-shadow:0 30px 60px rgba(0,0,0,.15);">
           ${heroBg}
-          <div style="position:absolute; inset:0; ${filmTextGradient(textPos)}"></div>
-          <div style="position:relative; padding:20px 20px 22px; color:#fff; width:100%;">
-            ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
+          <div id="prevText" data-drag-key="text" style="position:absolute; left:${tx}%; top:${ty}%; max-width:70%; color:#fff; outline:1.5px dashed rgba(255,255,255,.5); border-radius:6px; padding:8px 10px; box-sizing:border-box; user-select:none;">
+            ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:6px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="serif" style="font-size:22px; line-height:28px; font-weight:500; letter-spacing:-0.01em;">${esc(d.filmLine1||'')}<br>${esc(d.filmLine2||'')}<br>${esc(d.filmLine3||'')}</div>
           </div>
-          ${d.showQR ? `<div style="position:absolute; ${boothQRStyle(qrPos)} background:#fff; padding:8px; border-radius:8px;">${realQR(d.qrUrl, 72)}</div>` : ''}
+          ${d.showQR ? `<div id="prevQR" data-drag-key="qr" style="position:absolute; left:${qx}%; top:${qy}%; background:#fff; padding:8px; border-radius:8px; outline:1.5px dashed rgba(0,0,0,.4); line-height:0; user-select:none;">${realQR(d.qrUrl, 72)}</div>` : ''}
         </div>
       </div>`;
   }
