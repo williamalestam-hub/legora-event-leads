@@ -983,6 +983,8 @@ async function pullFromFirebase(){
   }
   const reps = await FB.once('config/reps');
   if (reps) DB.saveReps(Object.values(reps).filter(Boolean));
+  const hook = await FB.once('config/webhook');
+  if (typeof hook === 'string') DB.saveWebhook(hook);
 }
 
 function setupFirebaseListeners(){
@@ -993,6 +995,10 @@ function setupFirebaseListeners(){
   FB.on('config/reps', obj => {
     if (obj) DB.saveReps(Object.values(obj).filter(Boolean));
     rerenderActiveScreen();
+  });
+  FB.on('config/webhook', val => {
+    DB.saveWebhook(typeof val === 'string' ? val : '');
+    // Don't rerender — webhook changes are silent config.
   });
   for (const ev of DB.getEvents()){
     FB.on('attendees/' + ev.id, obj => {
@@ -1005,6 +1011,13 @@ function setupFirebaseListeners(){
     });
     FB.on('boothDesign/' + ev.id, design => {
       if (design) DB.saveBoothDesign(ev.id, Object.assign(defaultBoothDesign(), design));
+      // If the user is actively editing this event's design in the admin designer,
+      // don't rebuild the form (it would destroy the focused input mid-keystroke).
+      // The preview already updates locally on each keystroke; that's enough.
+      if (currentScreen === 'admin' && adminScope === 'event' && adminTab === 'design' && ev.id === designerEvId) {
+        redrawDesignerPreview();
+        return;
+      }
       rerenderActiveScreen();
     });
     FB.on('boothCaptures/' + ev.id, obj => {
@@ -1194,6 +1207,7 @@ function submitBooth(evId){
   list.unshift(cap);
   DB.saveBooth(evId, list);
   if (FB.ready()) FB.set('boothCaptures/' + evId + '/' + cap.id, cap);
+  postBoothToWebhook(cap, evId);
   boothStep = 'jude';
   renderBooth();
   _boothTimers.forEach(clearTimeout);
@@ -1301,10 +1315,12 @@ function renderRepList(){
   document.getElementById('repListEvent').textContent = ev.name;
   document.getElementById('repListRep').textContent = rep ? rep.name : 'Rep';
   const leads = DB.getLeads(evId);
-  document.getElementById('repListCount').textContent = leads.length + ' logged';
   const atts = DB.getAttendees(evId);
+  const loggedIds = new Set(leads.map(l => l.attendeeId));
+  const matchedLeadCount = atts.filter(a => loggedIds.has(a.id)).length;
+  document.getElementById('repListCount').textContent = matchedLeadCount + ' logged';
   document.getElementById('segAll').textContent = atts.length;
-  document.getElementById('segLog').textContent = leads.length;
+  document.getElementById('segLog').textContent = matchedLeadCount;
   const search = document.getElementById('repSearch');
   if (search && !search._wired){
     search._wired = true;
@@ -1314,7 +1330,6 @@ function renderRepList(){
     t.onclick = () => { repFilter = t.dataset.filter; renderRepList(); };
     t.classList.toggle('el-segtab-active', t.dataset.filter === repFilter);
   });
-  const loggedIds = new Set(leads.map(l => l.attendeeId));
   const q = repSearchQ.toLowerCase().trim();
   const filtered = atts.filter(a => {
     const text = (a.first + ' ' + a.last + ' ' + (a.company||'') + ' ' + (a.email||'')).toLowerCase();
@@ -1451,6 +1466,7 @@ function postLeadToWebhook(lead, att, evId){
   const payload = {
     timestamp: new Date(lead.timestamp).toISOString(),
     event: ev ? ev.name : '',
+    source: 'lead',
     repName: rep ? rep.name : '',
     firstName: att.first || '',
     lastName: att.last || '',
@@ -1461,6 +1477,27 @@ function postLeadToWebhook(lead, att, evId){
     phone: '',
     rating: lead.rating,
     notes: lead.notes || '',
+  };
+  fetch(url, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) }).catch(() => {});
+}
+function postBoothToWebhook(cap, evId){
+  const url = DB.getWebhook();
+  if (!url) return;
+  const ev = DB.getEvents().find(e => e.id === evId);
+  const payload = {
+    timestamp: new Date(cap.timestamp).toISOString(),
+    event: ev ? ev.name : '',
+    source: 'booth',
+    repName: '',
+    firstName: '',
+    lastName: '',
+    email: cap.email || '',
+    company: '',
+    jobTitle: '',
+    lawyers: '',
+    phone: '',
+    rating: '',
+    notes: '',
   };
   fetch(url, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) }).catch(() => {});
 }
@@ -2354,21 +2391,84 @@ function designerStepPreview(d, step){
 function renderAdminSettings(main){
   const hook = DB.getWebhook();
   const status = FB.ready() ? 'Live sync' : 'Connecting…';
+  const samplePayload = {
+    timestamp: '2026-04-21T14:22:10.000Z',
+    event: '26Q2 | Munich | legalXchange | April 28th',
+    source: 'lead',
+    repName: 'Will Ale',
+    firstName: 'Petra',
+    lastName: 'Testing',
+    email: 'petra@example.com',
+    company: 'Legora',
+    jobTitle: 'Partner',
+    lawyers: '',
+    phone: '',
+    rating: 'warm',
+    notes: 'Interested in the EU rollout'
+  };
   main.innerHTML = `
-    <div style="max-width:720px;">
+    <div style="max-width:760px;">
       <h2 class="serif" style="font-size:26px; font-weight:500; margin:0 0 6px; letter-spacing:-0.01em;">Settings</h2>
       <p style="color:#6b6b6b; font-size:14px; margin:0 0 22px;">Sync status: <span style="color:${FB.ready() ? '#1a7f4f' : '#9b6b17'}; font-weight:550;">${esc(status)}</span></p>
-      <div class="el-card" style="padding:22px 22px 18px;">
+      <div class="el-card" style="padding:22px 22px 20px; margin-bottom:18px;">
         <div class="el-eyebrow" style="margin-bottom:8px;">Webhook (optional)</div>
-        <div style="font-size:13px; color:#6b6b6b; margin-bottom:14px;">POST new leads and booth captures to this URL.</div>
-        <label class="el-input" style="width:100%; margin-bottom:12px;"><input id="webhookInput" value="${esc(hook)}" placeholder="https://example.com/webhook"></label>
-        <button class="el-btn el-btn-primary" onclick="admSaveWebhook()">Save webhook</button>
+        <div style="font-size:13px; color:#6b6b6b; margin-bottom:14px;">Every logged lead and booth capture is POSTed to this URL. Used for Clay, Zapier, or any custom ingestion. Syncs to all devices.</div>
+        <label class="el-input" style="width:100%; margin-bottom:12px;"><input id="webhookInput" value="${esc(hook)}" placeholder="https://api.clay.com/v3/sources/webhook/…"></label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="el-btn el-btn-primary" onclick="admSaveWebhook()">Save webhook</button>
+          <button class="el-btn el-btn-secondary" onclick="admTestWebhook()">Send test event</button>
+          ${hook ? `<button class="el-btn el-btn-ghost" onclick="admClearWebhook()" style="color:#c52925;">Clear</button>` : ''}
+        </div>
+        <div style="font-size:12px; color:#9b6b6b; margin-top:8px;">Tip: paste the URL and click <b>Send test event</b> — no need to save first.</div>
+      </div>
+      <div class="el-card" style="padding:22px 22px 20px;">
+        <div class="el-eyebrow" style="margin-bottom:8px;">Payload schema</div>
+        <div style="font-size:13px; color:#6b6b6b; margin-bottom:12px;">The JSON body sent on every event. Use these field names to set up your Clay mapping.</div>
+        <pre style="background:#0f1112; color:#e6e6e6; padding:16px; border-radius:8px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; line-height:1.55; overflow:auto; margin:0;">${esc(JSON.stringify(samplePayload, null, 2))}</pre>
+        <div style="font-size:12px; color:#6b6b6b; margin-top:10px;"><code style="background:#f0eee9; padding:1px 6px; border-radius:4px;">source</code> is <code style="background:#f0eee9; padding:1px 6px; border-radius:4px;">"lead"</code> for rep-logged leads and <code style="background:#f0eee9; padding:1px 6px; border-radius:4px;">"booth"</code> for self-service captures (which only include email + event + timestamp).</div>
       </div>
     </div>`;
 }
 function admSaveWebhook(){
   const v = document.getElementById('webhookInput').value.trim();
-  DB.saveWebhook(v); renderAdmin();
+  DB.saveWebhook(v);
+  if (FB.ready()) FB.set('config/webhook', v);
+  showToast(v ? 'Webhook saved · synced to all devices' : 'Webhook cleared');
+  renderAdmin();
+}
+function admClearWebhook(){
+  DB.saveWebhook('');
+  if (FB.ready()) FB.set('config/webhook', '');
+  showToast('Webhook cleared');
+  renderAdmin();
+}
+function admTestWebhook(){
+  const input = document.getElementById('webhookInput');
+  const url = (input && input.value.trim()) || DB.getWebhook();
+  if (!url){ showToast('Paste a webhook URL first', 'error'); return; }
+  // Persist whatever is currently in the field so subsequent leads hit the same URL.
+  if (url !== DB.getWebhook()){
+    DB.saveWebhook(url);
+    if (FB.ready()) FB.set('config/webhook', url);
+  }
+  const payload = {
+    timestamp: new Date().toISOString(),
+    event: 'TEST · Event Leads',
+    source: 'test',
+    repName: 'Test',
+    firstName: 'Test',
+    lastName: 'Lead',
+    email: 'test@example.com',
+    company: 'Legora',
+    jobTitle: 'Partner',
+    lawyers: '',
+    phone: '',
+    rating: 'warm',
+    notes: 'This is a test event from Event Leads Settings.'
+  };
+  fetch(url, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) })
+    .then(() => showToast('Test event sent — check Clay'))
+    .catch(() => showToast('Send failed — check the URL', 'error'));
 }
 
 // ────────── Bootstrap ──────────
