@@ -1296,17 +1296,23 @@ function renderRepPicker(){
     return;
   }
   list.innerHTML = '';
-  if (!events.length){
-    list.innerHTML = `<div style="padding:30px; text-align:center; color:#6b6b6b; font-size:13px;">No events yet. Ask an admin to add one.</div>`;
+  // Reps only see events marked Live by an admin — no point logging leads
+  // against dormant or upcoming events.
+  const liveEvents = events.filter(ev => ev.active);
+  if (!liveEvents.length){
+    list.innerHTML = `<div style="padding:30px; text-align:center; color:#6b6b6b; font-size:13px;">No live events right now.<br>Ask an admin to mark one as Live.</div>`;
     return;
   }
-  events.forEach(ev => {
+  liveEvents.forEach(ev => {
     const n = DB.getLeads(ev.id).length;
     const card = h('div', { class:'el-card rep-event-card', onclick: () => { DB.setActiveEventId(ev.id); goTo('rep-list'); } });
     card.innerHTML = `
       <div class="rep-event-icon">${legoraStar(16)}</div>
       <div style="flex:1; min-width:0;">
-        <div style="font-size:14px; font-weight:500;">${esc(ev.name)}</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="font-size:14px; font-weight:500;">${esc(ev.name)}</div>
+          ${badge('copper','Live',true)}
+        </div>
         <div style="font-size:12px; color:#6b6b6b; margin-top:2px;">${esc(ev.code || '')}</div>
       </div>
       <span class="mono" style="font-size:12px; color:#595959;">${n} leads</span>
