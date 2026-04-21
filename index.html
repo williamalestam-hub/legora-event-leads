@@ -1301,10 +1301,12 @@ function renderRepList(){
   document.getElementById('repListEvent').textContent = ev.name;
   document.getElementById('repListRep').textContent = rep ? rep.name : 'Rep';
   const leads = DB.getLeads(evId);
-  document.getElementById('repListCount').textContent = leads.length + ' logged';
   const atts = DB.getAttendees(evId);
+  const loggedIds = new Set(leads.map(l => l.attendeeId));
+  const matchedLeadCount = atts.filter(a => loggedIds.has(a.id)).length;
+  document.getElementById('repListCount').textContent = matchedLeadCount + ' logged';
   document.getElementById('segAll').textContent = atts.length;
-  document.getElementById('segLog').textContent = leads.length;
+  document.getElementById('segLog').textContent = matchedLeadCount;
   const search = document.getElementById('repSearch');
   if (search && !search._wired){
     search._wired = true;
@@ -1314,7 +1316,6 @@ function renderRepList(){
     t.onclick = () => { repFilter = t.dataset.filter; renderRepList(); };
     t.classList.toggle('el-segtab-active', t.dataset.filter === repFilter);
   });
-  const loggedIds = new Set(leads.map(l => l.attendeeId));
   const q = repSearchQ.toLowerCase().trim();
   const filtered = atts.filter(a => {
     const text = (a.first + ' ' + a.last + ' ' + (a.company||'') + ' ' + (a.email||'')).toLowerCase();
