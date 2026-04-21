@@ -244,20 +244,22 @@ body {
 
 /* ─── BOOTH ─── */
 #booth { background:#fff; align-items:stretch; padding:0; }
-.booth-frame { width:100%; max-width: 402px; min-height:100vh; margin:0 auto; background:#fff; display:flex; flex-direction:column; }
+.booth-frame { width:100%; max-width: 440px; min-height:100vh; margin:0 auto; background:#fff; display:flex; flex-direction:column; }
+#boothContent { flex:1; display:flex; flex-direction:column; min-height:0; }
 .booth-topbar { padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center; }
 .booth-form { flex:1; display:flex; flex-direction:column; padding:44px 28px 24px; overflow:auto; }
 .booth-heading { font-family:'Noto Serif',ui-serif,Georgia,serif; font-size:38px; line-height:44px; margin:0 0 10px; font-weight:500; letter-spacing:-0.02em; color:#00311C; }
 .booth-sub { font-size:15px; line-height:22px; color:#595959; margin:0 0 28px; }
 .booth-cta { background: var(--color-brand-gray3); color: #1c1c1c; border-color: rgba(0,0,0,.08); }
 .booth-foot { padding:10px 24px; border-top:1px solid rgba(0,0,0,.06); font-size:11px; color:#6b6b6b; display:flex; justify-content:space-between; }
-.booth-jude { flex:1; display:flex; flex-direction:column; padding:20px 24px 28px; position:relative; overflow:hidden; }
+.booth-jude { flex:1; display:flex; flex-direction:column; padding:20px 24px 28px; position:relative; overflow:hidden; min-height:0; }
 .booth-hero { position:relative; border-radius:14px; overflow:hidden; background:#1c1c1c; flex:1; min-height:0; display:flex; align-items:flex-end; box-shadow:0 30px 60px rgba(0,0,0,.15); }
 .booth-hero img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center top; }
-.booth-hero-gradient { position:absolute; inset:0; background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.78) 100%); }
-.booth-hero-caption { position:relative; padding:20px 20px 22px; color:#fff; width:100%; }
+.booth-hero-gradient { position:absolute; inset:0; background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,.82) 100%); }
+.booth-hero-caption { position:relative; padding:20px 110px 22px 20px; color:#fff; width:100%; }
 .booth-hero-caption .film-line { font-family:'Noto Serif',ui-serif,Georgia,serif; font-size:22px; line-height:28px; font-weight:500; letter-spacing:-0.01em; }
-.booth-qr { position:absolute; top:14px; right:14px; background:#fff; padding:8px; border-radius:8px; }
+.booth-qr { position:absolute; bottom:14px; right:14px; background:#fff; padding:6px; border-radius:8px; line-height:0; box-shadow:0 6px 20px rgba(0,0,0,.25); }
+.booth-qr svg { display:block; width:84px; height:84px; }
 .booth-done { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 36px; text-align:center; }
 .booth-done-circle { width:56px; height:56px; border-radius:999px; background: var(--color-brand-gray3); color:#1c1c1c; display:flex; align-items:center; justify-content:center; margin-bottom:20px; }
 .booth-done-h2 { font-family:'Noto Serif',ui-serif,Georgia,serif; font-size:28px; font-weight:500; margin:0 0 8px; letter-spacing:-0.01em; color:#00311C; }
@@ -283,6 +285,22 @@ body {
 .sheet-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:80; display:flex; align-items:flex-end; animation: elFade .18s ease; }
 .sheet-card { width:100%; max-width:402px; margin:0 auto; background:#fff; border-radius:20px 20px 0 0; padding:10px 20px 28px; box-shadow:0 -20px 60px rgba(0,0,0,.2); animation: elSheet .26s cubic-bezier(.32,.72,0,1); }
 .sheet-grabber { width:36px; height:4px; background:rgba(0,0,0,.12); border-radius:99px; margin:4px auto 16px; }
+
+/* centered modal (admin) */
+.modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:90; display:flex; align-items:center; justify-content:center; padding:24px; animation: elFade .18s ease; }
+.modal-card { width:100%; max-width:480px; background:#fff; border-radius:14px; padding:26px 28px 24px; box-shadow:0 30px 80px rgba(0,0,0,.25); animation: elSheet .22s cubic-bezier(.32,.72,0,1); }
+.modal-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; }
+.modal-title { font-family:'Noto Serif', serif; font-size:22px; font-weight:500; letter-spacing:-0.01em; margin:0; color:#1c1c1c; }
+.modal-sub { font-size:13px; color:#6b6b6b; margin:4px 0 0; }
+.modal-close { width:28px; height:28px; border-radius:8px; border:0; background:transparent; color:#6b6b6b; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.modal-close:hover { background:#f5f5f5; color:#1c1c1c; }
+.modal-field { margin-bottom:16px; }
+.modal-field > .el-eyebrow { margin-bottom:6px; display:block; }
+.modal-field .el-input { width:100%; }
+.modal-row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+.modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:22px; padding-top:18px; border-top:1px solid rgba(0,0,0,.06); }
+.modal-check { display:flex; align-items:center; gap:10px; padding:12px 14px; background:#fafafa; border:1px solid rgba(0,0,0,.06); border-radius:10px; cursor:pointer; font-size:13px; }
+.modal-check input { margin:0; accent-color:#ce5f27; }
 
 /* ─── MANAGER DESKTOP ─── */
 #manager { background: var(--surface-secondary); }
@@ -582,40 +600,7 @@ body {
     </div>
   </div>
   <div class="admin-shell">
-    <div class="admin-sidebar">
-      <div class="el-eyebrow" style="margin:4px 8px 10px;">WORKSPACE</div>
-      <button class="admin-side-btn active" data-tab="events" onclick="switchAdminTab('events')">
-        <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
-        Events
-      </button>
-      <button class="admin-side-btn" data-tab="attendees" onclick="switchAdminTab('attendees')">
-        <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 5-6 8-6s7 2 8 6"/></svg></span>
-        Attendees
-      </button>
-      <button class="admin-side-btn" data-tab="leads" onclick="switchAdminTab('leads')">
-        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 5 6 5 10a5 5 0 1 1-10 0c0-2 1-3 2-4-1 3 1 4 2 4 0-2 0-4 1-5 0-2 0-3 0-5Z"/></svg></span>
-        Leads
-      </button>
-      <button class="admin-side-btn" data-tab="booth" onclick="switchAdminTab('booth')">
-        <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span>
-        Booth captures
-      </button>
-      <button class="admin-side-btn" data-tab="design" onclick="switchAdminTab('design')">
-        <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 20l4-10 4 10M2 20h12M14 4h7v7M21 4l-8 8"/></svg></span>
-        Booth designer
-      </button>
-      <button class="admin-side-btn" data-tab="settings" onclick="switchAdminTab('settings')">
-        <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></span>
-        Settings
-      </button>
-      <div class="el-hairline" style="margin:16px 4px;"></div>
-      <div class="el-eyebrow" style="margin:4px 8px 10px;">EVENTS</div>
-      <div id="admEventList"></div>
-      <button class="el-btn el-btn-ghost" style="width:100%; justify-content:flex-start; padding:7px 10px; margin-top:4px; color:#595959;" onclick="admAddEvent()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        New event
-      </button>
-    </div>
+    <div class="admin-sidebar" id="admSidebar"></div>
     <div class="admin-main el-scroll" id="admMain"></div>
   </div>
 </div>
@@ -626,10 +611,20 @@ body {
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 
 <script>
 // ═══════════════ CONSTANTS ═══════════════
 const ACCESS_PIN = '8889';
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAjuTzTz3SG8yF2Mx4BWVQUvYx_33GjH4s",
+  authDomain: "event-leads-90434.firebaseapp.com",
+  databaseURL: "https://event-leads-90434-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "event-leads-90434",
+  storageBucket: "event-leads-90434.firebasestorage.app",
+  messagingSenderId: "236202325874",
+  appId: "1:236202325874:web:d2546a4886e39ef96e4feb"
+};
 
 // ═══════════════ ICONS ═══════════════
 const ICONS = {
@@ -711,6 +706,24 @@ function fmtDate(iso){
 function nowIso(){ return new Date().toISOString(); }
 function uid(prefix){ return (prefix||'id') + Math.random().toString(36).slice(2, 8); }
 
+function realQR(text, size){
+  size = size || 96;
+  if (!text || typeof window.qrcode !== 'function') return fauxQR(size);
+  try {
+    const q = window.qrcode(0, 'M');
+    q.addData(String(text));
+    q.make();
+    const cells = q.getModuleCount();
+    const s = size / cells;
+    let rects = `<rect x="0" y="0" width="${size}" height="${size}" fill="#fff"/>`;
+    for (let r=0; r<cells; r++) for (let c=0; c<cells; c++){
+      if (q.isDark(r, c)) rects += `<rect x="${(c*s).toFixed(2)}" y="${(r*s).toFixed(2)}" width="${s.toFixed(2)}" height="${s.toFixed(2)}" fill="#1c1c1c"/>`;
+    }
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" role="img" aria-label="QR code">${rects}</svg>`;
+  } catch(e){
+    return fauxQR(size);
+  }
+}
 function fauxQR(size){
   size = size || 72;
   const cells = 21;
@@ -756,11 +769,21 @@ const DB = {
   setActiveRepId(id)     { id ? localStorage.setItem('le_rep_id', id) : localStorage.removeItem('le_rep_id'); },
   getActiveEventId()     { return localStorage.getItem('le_ev_id') || ''; },
   setActiveEventId(id)   { id ? localStorage.setItem('le_ev_id', id) : localStorage.removeItem('le_ev_id'); },
-  getBoothDesign() {
-    const raw = localStorage.getItem('le_booth_design');
-    return raw ? JSON.parse(raw) : defaultBoothDesign();
+  getBoothDesign(evId) {
+    const id = evId || DB.getActiveEventId();
+    if (id){
+      const raw = localStorage.getItem('le_booth_design_' + id);
+      if (raw) return Object.assign(defaultBoothDesign(), JSON.parse(raw));
+    }
+    // Legacy fallback: single global design used before per-event split.
+    const legacy = localStorage.getItem('le_booth_design');
+    return legacy ? Object.assign(defaultBoothDesign(), JSON.parse(legacy)) : defaultBoothDesign();
   },
-  saveBoothDesign(d)     { localStorage.setItem('le_booth_design', JSON.stringify(d)); },
+  saveBoothDesign(evId, d) {
+    if (typeof evId === 'object' && evId !== null && d === undefined) { d = evId; evId = DB.getActiveEventId(); }
+    if (!evId) return;
+    localStorage.setItem('le_booth_design_' + evId, JSON.stringify(d));
+  },
   getWebhook()           { return localStorage.getItem('le_webhook') || ''; },
   saveWebhook(u)         { localStorage.setItem('le_webhook', u); },
   getFbConfig()          { return localStorage.getItem('le_fb_cfg') || ''; },
@@ -780,6 +803,7 @@ function defaultBoothDesign(){
     thanksBody: 'The film is on its way to your inbox.\nSee you on the other side.',
     heroImage: '',
     showQR: true,
+    qrUrl: 'https://legora.com',
   };
 }
 
@@ -828,15 +852,17 @@ function setFbStatus(state, msg){
   txt.textContent = msg;
 }
 
-async function connectFirebase(cfgStr){
-  if (!cfgStr) return false;
+async function connectFirebase(cfg){
+  if (!cfg) return false;
   setFbStatus('', 'Connecting…');
-  if (!FB.init(cfgStr)) { setFbStatus('err', 'Invalid config'); return false; }
-  DB.saveFbConfig(cfgStr);
-  await pushLocalToFirebase();
+  if (!FB.init(cfg)) { setFbStatus('err', 'Invalid config'); return false; }
+  // Pull server state first so a reload never stomps newer server data with
+  // stale local data. Individual user actions write directly to Firebase, so
+  // we don't need a bulk push on startup.
   await pullFromFirebase();
   setupFirebaseListeners();
   setFbStatus('ok', 'Live sync');
+  rerenderActiveScreen();
   return true;
 }
 
@@ -854,11 +880,11 @@ async function pushLocalToFirebase(){
     if (leads.length){ const o = {}; leads.forEach(l => o[l.id] = l); FB.set('leads/' + ev.id, o); }
     const booth = DB.getBooth(ev.id);
     if (booth.length){ const o = {}; booth.forEach(b => o[b.id] = b); FB.set('boothCaptures/' + ev.id, o); }
+    const evDesign = DB.getBoothDesign(ev.id);
+    FB.set('boothDesign/' + ev.id, evDesign);
   }
   const reps = DB.getReps();
   if (reps.length){ const o = {}; reps.forEach(r => o[r.id] = r); FB.set('config/reps', o); }
-  const design = DB.getBoothDesign();
-  FB.set('config/booth', design);
 }
 
 async function pullFromFirebase(){
@@ -877,11 +903,11 @@ async function pullFromFirebase(){
     if (leads) DB.saveLeads(ev.id, Object.values(leads).filter(Boolean));
     const booth = await FB.once('boothCaptures/' + ev.id);
     if (booth) DB.saveBooth(ev.id, Object.values(booth).filter(Boolean));
+    const evDesign = await FB.once('boothDesign/' + ev.id);
+    if (evDesign) DB.saveBoothDesign(ev.id, Object.assign(defaultBoothDesign(), evDesign));
   }
   const reps = await FB.once('config/reps');
   if (reps) DB.saveReps(Object.values(reps).filter(Boolean));
-  const design = await FB.once('config/booth');
-  if (design) DB.saveBoothDesign(Object.assign(defaultBoothDesign(), design));
 }
 
 function setupFirebaseListeners(){
@@ -893,10 +919,6 @@ function setupFirebaseListeners(){
     if (obj) DB.saveReps(Object.values(obj).filter(Boolean));
     rerenderActiveScreen();
   });
-  FB.on('config/booth', design => {
-    if (design) DB.saveBoothDesign(Object.assign(defaultBoothDesign(), design));
-    rerenderActiveScreen();
-  });
   for (const ev of DB.getEvents()){
     FB.on('attendees/' + ev.id, obj => {
       if (obj) DB.saveAttendees(ev.id, Object.values(obj).filter(Boolean));
@@ -904,6 +926,10 @@ function setupFirebaseListeners(){
     });
     FB.on('leads/' + ev.id, obj => {
       DB.saveLeads(ev.id, obj ? Object.values(obj).filter(Boolean) : []);
+      rerenderActiveScreen();
+    });
+    FB.on('boothDesign/' + ev.id, design => {
+      if (design) DB.saveBoothDesign(ev.id, Object.assign(defaultBoothDesign(), design));
       rerenderActiveScreen();
     });
     FB.on('boothCaptures/' + ev.id, obj => {
@@ -1022,7 +1048,7 @@ function renderBooth(){
   renderBoothStep(evId, ev);
 }
 function renderBoothStep(evId, ev){
-  const d = DB.getBoothDesign();
+  const d = DB.getBoothDesign(evId);
   const wrap = document.getElementById('boothContent');
   if (boothStep === 'form'){
     wrap.innerHTML = `
@@ -1067,7 +1093,7 @@ function renderBoothStep(evId, ev){
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="film-line">${esc(d.filmLine1)}<br>${esc(d.filmLine2)}<br>${esc(d.filmLine3)}</div>
           </div>
-          ${d.showQR ? `<div class="booth-qr">${fauxQR(72)}</div>` : ''}
+          ${d.showQR ? `<a href="${esc(d.qrUrl||'#')}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none;" aria-label="Scan or tap to open ${esc(d.qrUrl||'')}">${realQR(d.qrUrl, 96)}</a>` : ''}
         </div>
         <div style="margin-top:16px; text-align:center;">
           <div class="el-eyebrow" style="margin-bottom:6px;">SCAN TO WATCH THE FILM</div>
@@ -1475,27 +1501,173 @@ function exportCSV(){
 
 // ═══════════════ ADMIN SHELL ═══════════════
 let adminTab = 'events';
-function renderAdmin(){
-  document.getElementById('admMark').innerHTML = legoraMark(20);
-  document.querySelectorAll('.admin-side-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === adminTab));
-  const list = document.getElementById('admEventList');
-  const currentEvId = DB.getActiveEventId() || (DB.getEvents()[0] && DB.getEvents()[0].id);
-  list.innerHTML = '';
-  DB.getEvents().forEach(ev => {
-    const btn = h('button', { class:'admin-ev-btn' + (ev.id === currentEvId ? ' active' : ''), onclick: () => { DB.setActiveEventId(ev.id); renderAdmin(); } });
-    btn.innerHTML = `<span class="dot"></span><span class="ev-name">${esc(ev.name)}</span>`;
+// Admin IA: workspace-scope shows Events + Settings, clicking an event switches
+// to event-scope where the sidebar shows that event's own menu items.
+let adminScope = 'workspace';       // 'workspace' | 'event'
+let adminEventId = '';
+const SVG = {
+  events: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  attendees: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 5-6 8-6s7 2 8 6"/></svg>',
+  leads: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 5 6 5 10a5 5 0 1 1-10 0c0-2 1-3 2-4-1 3 1 4 2 4 0-2 0-4 1-5 0-2 0-3 0-5Z"/></svg>',
+  booth: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+  design: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 20l4-10 4 10M2 20h12M14 4h7v7M21 4l-8 8"/></svg>',
+  settings: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>',
+  overview: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v16"/></svg>',
+  back: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+};
+function adminSideBtn(tab, icon, label){
+  const active = adminTab === tab ? ' active' : '';
+  return `<button class="admin-side-btn${active}" data-tab="${esc(tab)}" onclick="switchAdminTab('${esc(tab)}')"><span class="ico">${icon}</span>${esc(label)}</button>`;
+}
+function openEventScope(evId){
+  const ev = DB.getEvents().find(e => e.id === evId);
+  if (!ev) return;
+  adminScope = 'event';
+  adminEventId = evId;
+  adminTab = 'overview';
+  designerEvId = evId;
+  DB.setActiveEventId(evId);
+  renderAdmin();
+}
+function backToWorkspace(){
+  adminScope = 'workspace';
+  adminTab = 'events';
+  renderAdmin();
+}
+function renderAdminSidebar(){
+  const side = document.getElementById('admSidebar');
+  if (!side) return;
+  const events = DB.getEvents();
+  if (adminScope === 'event'){
+    const ev = events.find(e => e.id === adminEventId);
+    if (!ev){ adminScope = 'workspace'; adminTab = 'events'; return renderAdminSidebar(); }
+    side.innerHTML = `
+      <button class="admin-side-btn" style="margin-bottom:10px; color:#6b6b6b;" onclick="backToWorkspace()">
+        <span class="ico">${SVG.back}</span>All events
+      </button>
+      <div style="padding:4px 10px 12px; border-bottom:1px solid rgba(0,0,0,.06); margin-bottom:10px;">
+        <div class="el-eyebrow" style="margin-bottom:4px;">EVENT</div>
+        <div style="font-weight:550; color:#1c1c1c; line-height:1.25; display:flex; align-items:center; gap:8px;">
+          <span style="width:8px; height:8px; border-radius:99px; background:${ev.active?'#ce5f27':'#d9d9d9'}; flex:none;"></span>
+          <span style="overflow:hidden; text-overflow:ellipsis;">${esc(ev.name)}</span>
+        </div>
+        ${ev.date?`<div style="font-size:11px; color:#6b6b6b; margin-top:4px;">${esc(ev.date)}</div>`:''}
+      </div>
+      ${adminSideBtn('overview', SVG.overview, 'Overview')}
+      ${adminSideBtn('attendees', SVG.attendees, 'Attendees')}
+      ${adminSideBtn('leads', SVG.leads, 'Leads')}
+      ${adminSideBtn('booth', SVG.booth, 'Booth captures')}
+      ${adminSideBtn('design', SVG.design, 'Booth designer')}`;
+    return;
+  }
+  // workspace scope
+  side.innerHTML = `
+    <div class="el-eyebrow" style="margin:4px 8px 10px;">WORKSPACE</div>
+    ${adminSideBtn('events', SVG.events, 'All events')}
+    ${adminSideBtn('settings', SVG.settings, 'Settings')}
+    <div class="el-hairline" style="margin:16px 4px;"></div>
+    <div class="el-eyebrow" style="margin:4px 8px 10px;">EVENTS</div>
+    <div id="admEventList"></div>
+    <button class="el-btn el-btn-ghost" style="width:100%; justify-content:flex-start; padding:7px 10px; margin-top:4px; color:#595959;" onclick="admAddEvent()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      New event
+    </button>`;
+  const list = side.querySelector('#admEventList');
+  events.forEach(ev => {
+    const btn = h('button', { class:'admin-ev-btn' + (ev.active ? ' active' : ''), onclick: () => openEventScope(ev.id) });
+    btn.innerHTML = `<span class="dot" style="background:${ev.active?'#ce5f27':'#d9d9d9'};"></span><span class="ev-name">${esc(ev.name)}</span>`;
     list.appendChild(btn);
   });
+}
+function renderAdmin(){
+  document.getElementById('admMark').innerHTML = legoraMark(20);
+  // Ensure a valid default tab for the current scope
+  const wsTabs = ['events','settings'];
+  const evTabs = ['overview','attendees','leads','booth','design'];
+  if (adminScope === 'workspace' && !wsTabs.includes(adminTab)) adminTab = 'events';
+  if (adminScope === 'event' && !evTabs.includes(adminTab)) adminTab = 'overview';
+  renderAdminSidebar();
   const main = document.getElementById('admMain');
   main.innerHTML = '';
-  if (adminTab === 'events') renderAdminEvents(main);
-  if (adminTab === 'attendees') renderAdminAttendees(main, currentEvId);
-  if (adminTab === 'leads') renderAdminLeads(main, currentEvId);
-  if (adminTab === 'booth') renderAdminBooth(main, currentEvId);
-  if (adminTab === 'design') renderAdminDesigner(main);
-  if (adminTab === 'settings') renderAdminSettings(main);
+  if (adminScope === 'workspace'){
+    if (adminTab === 'events') renderAdminEvents(main);
+    if (adminTab === 'settings') renderAdminSettings(main);
+    return;
+  }
+  const evId = adminEventId;
+  if (adminTab === 'overview') renderAdminEventOverview(main, evId);
+  if (adminTab === 'attendees') renderAdminAttendees(main, evId);
+  if (adminTab === 'leads') renderAdminLeads(main, evId);
+  if (adminTab === 'booth') renderAdminBooth(main, evId);
+  if (adminTab === 'design') { designerEvId = evId; renderAdminDesigner(main); }
 }
 function switchAdminTab(t){ adminTab = t; renderAdmin(); }
+
+// ═══ Admin: Event Overview (inline edit) ═══
+function renderAdminEventOverview(main, evId){
+  const ev = DB.getEvents().find(e => e.id === evId);
+  if (!ev){ main.innerHTML = '<div style="padding:40px; color:#6b6b6b;">Event not found.</div>'; return; }
+  const atts = DB.getAttendees(evId).length;
+  const leads = DB.getLeads(evId).length;
+  const caps = DB.getBooth(evId).length;
+  main.innerHTML = `
+    <div style="max-width:760px;">
+      <div style="margin-bottom:24px;">
+        <div class="el-eyebrow" style="margin-bottom:6px;">ADMIN · ${esc(ev.name).toUpperCase()}</div>
+        <h1 class="admin-h1">Overview</h1>
+        <p class="admin-subtext">Edit event details. Changes sync live to all connected devices.</p>
+      </div>
+      <div class="el-card" style="padding:22px 24px; margin-bottom:18px;">
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:18px;">
+          <div><div class="el-eyebrow" style="margin-bottom:4px;">ATTENDEES</div><div class="mono" style="font-size:28px; font-weight:500;">${atts}</div></div>
+          <div><div class="el-eyebrow" style="margin-bottom:4px;">LEADS</div><div class="mono" style="font-size:28px; font-weight:500;">${leads}</div></div>
+          <div><div class="el-eyebrow" style="margin-bottom:4px;">BOOTH CAPTURES</div><div class="mono" style="font-size:28px; font-weight:500;">${caps}</div></div>
+        </div>
+      </div>
+      <form class="el-card" id="evOverviewForm" style="padding:22px 24px;">
+        <div class="modal-field">
+          <label class="el-eyebrow" for="ovName">Event name</label>
+          <label class="el-input"><input id="ovName" value="${esc(ev.name)}" required autocomplete="off"></label>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label class="el-eyebrow" for="ovDate">Date</label>
+            <label class="el-input"><input id="ovDate" type="date" value="${esc(ev.date||'')}"></label>
+          </div>
+          <div class="modal-field">
+            <label class="el-eyebrow" for="ovCode">Short code</label>
+            <label class="el-input"><input id="ovCode" value="${esc(ev.code||'')}" autocomplete="off"></label>
+          </div>
+        </div>
+        <label class="modal-check" style="margin-bottom:4px;">
+          <input type="checkbox" id="ovActive" ${ev.active?'checked':''}>
+          <span><strong style="font-weight:550;">Live event</strong><br><span style="color:#6b6b6b;">Reps and booth capture against this event.</span></span>
+        </label>
+        <div class="modal-actions" style="justify-content:space-between;">
+          <button type="button" class="el-btn el-btn-ghost" onclick="admDeleteEvent('${esc(ev.id)}')" style="color:#c52925;">${ICONS.trash} Delete event</button>
+          <button type="submit" class="el-btn el-btn-primary">Save changes</button>
+        </div>
+      </form>
+    </div>`;
+  main.querySelector('#evOverviewForm').onsubmit = e => {
+    e.preventDefault();
+    const name = main.querySelector('#ovName').value.trim();
+    if (!name) return;
+    const updated = {
+      ...ev,
+      name,
+      code: main.querySelector('#ovCode').value.trim(),
+      date: main.querySelector('#ovDate').value || '',
+      active: !!main.querySelector('#ovActive').checked,
+    };
+    let events = DB.getEvents().map(x => x.id === updated.id ? updated : (updated.active ? { ...x, active:false } : x));
+    DB.saveEvents(events);
+    if (updated.active) DB.setActiveEventId(updated.id);
+    if (FB.ready()) events.forEach(x => FB.set('events/' + x.id, x));
+    showToast('Saved');
+    renderAdmin();
+  };
+}
 
 // ═══ Admin: Events ═══
 function renderAdminEvents(main){
@@ -1521,7 +1693,8 @@ function renderAdminEvents(main){
     return;
   }
   events.forEach(ev => {
-    const row = h('div', { class:'admin-table-row', style:'grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr 1fr 60px;' });
+    const row = h('div', { class:'admin-table-row', style:'grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr 1fr 100px; cursor:pointer;' });
+    row.onclick = e => { if (e.target.closest('button')) return; openEventScope(ev.id); };
     row.innerHTML = `
       <div style="display:flex; align-items:center; gap:10px;">
         <span style="color:${ev.active?'#ce5f27':'#6b6b6b'}">${legoraStar(14)}</span>
@@ -1534,24 +1707,107 @@ function renderAdminEvents(main){
       <span class="mono">${DB.getLeads(ev.id).length}</span>
       <span class="mono">${DB.getBooth(ev.id).length}</span>
       <div style="display:flex; gap:4px; justify-content:flex-end;">
-        <button class="el-btn el-btn-ghost" style="width:28px; height:28px; padding:0; justify-content:center;" onclick="admToggleActive('${ev.id}')" title="Make active">${ev.active?'●':'○'}</button>
-        <button class="el-btn el-btn-ghost" style="width:28px; height:28px; padding:0; justify-content:center;" onclick="admDeleteEvent('${ev.id}')" title="Delete">${ICONS.trash}</button>
+        <button class="el-btn el-btn-ghost" style="width:28px; height:28px; padding:0; justify-content:center;" onclick="event.stopPropagation(); admToggleActive('${ev.id}')" title="Make active">${ev.active?'●':'○'}</button>
+        <button class="el-btn el-btn-ghost" style="font-size:11px; padding:4px 10px; height:28px;" onclick="event.stopPropagation(); openEventScope('${ev.id}')">Open</button>
+        <button class="el-btn el-btn-ghost" style="width:28px; height:28px; padding:0; justify-content:center;" onclick="event.stopPropagation(); admDeleteEvent('${ev.id}')" title="Delete">${ICONS.trash}</button>
       </div>`;
     tbl.appendChild(row);
   });
 }
-function admAddEvent(){
-  const name = prompt('Event name? (e.g. LegalXchange Munich)');
-  if (!name) return;
-  const code = prompt('Code? (e.g. 26Q2 · Munich · LegalXchange · Apr 28)') || '';
-  const date = prompt('Date? (YYYY-MM-DD)') || '';
-  const ev = { id: uid('ev'), name: name.trim(), code: code.trim(), date: date.trim(), active: DB.getEvents().length === 0 };
-  const events = DB.getEvents();
-  events.push(ev);
-  DB.saveEvents(events);
-  if (ev.active) DB.setActiveEventId(ev.id);
-  if (FB.ready()) FB.set('events/' + ev.id, ev);
-  renderAdmin();
+function admAddEvent(existing){
+  const isEdit = !!existing;
+  const isFirst = !isEdit && DB.getEvents().length === 0;
+  const today = new Date().toISOString().slice(0,10);
+  const data = existing ? { ...existing } : { name:'', code:'', date: today, active: isFirst };
+  const close = () => { const n = document.getElementById('admEventModal'); if (n) n.remove(); };
+  const root = h('div', { id:'admEventModal', class:'modal-backdrop', onclick: e => { if (e.target === root) close(); } });
+  root.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="admEvTitle">
+      <div class="modal-head">
+        <div>
+          <h2 class="modal-title" id="admEvTitle">${isEdit ? 'Edit event' : 'New event'}</h2>
+          <p class="modal-sub">${isEdit ? 'Update the details for this event.' : 'Set up a new event. You can add attendees after.'}</p>
+        </div>
+        <button class="modal-close" type="button" aria-label="Close">${ICONS.close}</button>
+      </div>
+      <form id="admEvForm" novalidate>
+        <div class="modal-field">
+          <label class="el-eyebrow" for="evName">Event name</label>
+          <label class="el-input"><input id="evName" required placeholder="e.g. LegalXchange Munich" value="${esc(data.name)}" autocomplete="off"></label>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label class="el-eyebrow" for="evDate">Date</label>
+            <label class="el-input"><input id="evDate" type="date" value="${esc(data.date)}"></label>
+          </div>
+          <div class="modal-field">
+            <label class="el-eyebrow" for="evCode">Short code</label>
+            <label class="el-input"><input id="evCode" placeholder="Auto" value="${esc(data.code)}" autocomplete="off"></label>
+          </div>
+        </div>
+        <label class="modal-check">
+          <input type="checkbox" id="evActive" ${data.active ? 'checked' : ''}>
+          <span><strong style="font-weight:550;">Make this the live event</strong><br><span style="color:#6b6b6b;">Reps and booth will capture against this event.</span></span>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="el-btn el-btn-ghost" data-role="cancel">Cancel</button>
+          <button type="submit" class="el-btn el-btn-primary">${isEdit ? 'Save changes' : 'Create event'}</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(root);
+  const nameInput = root.querySelector('#evName');
+  const codeInput = root.querySelector('#evCode');
+  const dateInput = root.querySelector('#evDate');
+  const activeInput = root.querySelector('#evActive');
+  nameInput.focus();
+  // Auto-suggest code from name + date until user types in code field
+  let codeTouched = !!data.code;
+  codeInput.addEventListener('input', () => { codeTouched = true; });
+  function suggestCode(){
+    if (codeTouched) return;
+    const n = nameInput.value.trim();
+    const d = dateInput.value;
+    if (!n) { codeInput.value = ''; return; }
+    const mo = d ? new Date(d + 'T00:00:00').toLocaleString('en', { month:'short' }) : '';
+    const day = d ? String(new Date(d + 'T00:00:00').getDate()) : '';
+    codeInput.value = [n, mo && day ? `${mo} ${day}` : ''].filter(Boolean).join(' · ');
+  }
+  nameInput.addEventListener('input', suggestCode);
+  dateInput.addEventListener('change', suggestCode);
+  root.querySelector('.modal-close').onclick = close;
+  root.querySelector('[data-role="cancel"]').onclick = close;
+  document.addEventListener('keydown', function esc(e){
+    if (e.key === 'Escape'){ close(); document.removeEventListener('keydown', esc); }
+  });
+  root.querySelector('#admEvForm').onsubmit = e => {
+    e.preventDefault();
+    const name = nameInput.value.trim();
+    if (!name){ nameInput.focus(); return; }
+    const ev = {
+      id: existing ? existing.id : uid('ev'),
+      name,
+      code: (codeInput.value || '').trim(),
+      date: dateInput.value || '',
+      active: !!activeInput.checked,
+    };
+    let events = DB.getEvents();
+    if (isEdit){
+      events = events.map(x => x.id === ev.id ? { ...x, ...ev } : (ev.active ? { ...x, active:false } : x));
+    } else {
+      if (ev.active) events = events.map(x => ({ ...x, active:false }));
+      events.push(ev);
+    }
+    DB.saveEvents(events);
+    if (ev.active) DB.setActiveEventId(ev.id);
+    if (FB.ready()) events.forEach(x => FB.set('events/' + x.id, x));
+    close();
+    renderAdmin();
+  };
+}
+function admEditEvent(id){
+  const ev = DB.getEvents().find(e => e.id === id);
+  if (ev) admAddEvent(ev);
 }
 function admToggleActive(id){
   const events = DB.getEvents().map(e => ({ ...e, active: e.id === id }));
@@ -1567,7 +1823,11 @@ function admDeleteEvent(id){
   localStorage.removeItem('le_att_' + id);
   localStorage.removeItem('le_leads_' + id);
   localStorage.removeItem('le_booth_' + id);
-  if (FB.ready()){ FB.remove('events/' + id); FB.remove('attendees/' + id); FB.remove('leads/' + id); FB.remove('boothCaptures/' + id); }
+  localStorage.removeItem('le_booth_design_' + id);
+  if (FB.ready()){ FB.remove('events/' + id); FB.remove('attendees/' + id); FB.remove('leads/' + id); FB.remove('boothCaptures/' + id); FB.remove('boothDesign/' + id); }
+  if (adminScope === 'event' && adminEventId === id){
+    adminScope = 'workspace'; adminTab = 'events'; adminEventId = '';
+  }
   renderAdmin();
 }
 
@@ -1742,14 +2002,36 @@ function renderAdminBooth(main, evId){
 
 // ═══ Admin: Booth Designer ═══
 let designerStep = 'form';
+let designerEvId = '';
 function renderAdminDesigner(main){
-  const d = DB.getBoothDesign();
-  main.innerHTML = `
-    <div style="margin-bottom:20px; display:flex; align-items:flex-end; justify-content:space-between; gap:16px;">
-      <div>
+  const events = DB.getEvents();
+  if (!events.length){
+    main.innerHTML = `
+      <div style="margin-bottom:20px;">
         <div class="el-eyebrow" style="margin-bottom:6px;">ADMIN · BOOTH DESIGNER</div>
         <h1 class="admin-h1">Booth designer</h1>
-        <p class="admin-subtext">Shape the kiosk visitors see — copy, hero image, QR toggle. Changes go live on every booth iPad instantly.</p>
+      </div>
+      <div class="el-card" style="padding:40px; text-align:center; color:#6b6b6b;">
+        Create an event first. Each event has its own booth design so you can run different campaigns in parallel.
+        <div style="margin-top:14px;"><button class="el-btn el-btn-primary" onclick="switchAdminTab('events')">Go to events</button></div>
+      </div>`;
+    return;
+  }
+  // Scoped to the event that's open in the sidebar.
+  if (adminScope === 'event' && adminEventId) designerEvId = adminEventId;
+  if (!designerEvId || !events.find(e => e.id === designerEvId)){
+    const active = events.find(e => e.active);
+    designerEvId = (active && active.id) || events[0].id;
+  }
+  const evId = designerEvId;
+  const ev = events.find(e => e.id === evId);
+  const d = DB.getBoothDesign(evId);
+  main.innerHTML = `
+    <div style="margin-bottom:20px; display:flex; align-items:flex-end; justify-content:space-between; gap:16px;">
+      <div style="flex:1; min-width:0;">
+        <div class="el-eyebrow" style="margin-bottom:6px;">ADMIN · ${esc((ev&&ev.name)||'').toUpperCase()}</div>
+        <h1 class="admin-h1">Booth designer</h1>
+        <p class="admin-subtext">Editing booth design for <strong>${esc((ev&&ev.name)||'')}</strong>. Changes sync live to this event's booth.</p>
       </div>
       <button class="el-btn el-btn-ghost" onclick="admResetDesign()">Reset to default</button>
     </div>
@@ -1773,6 +2055,7 @@ function renderAdminDesigner(main){
               <span style="font-size:13px; margin-left:10px;">QR is ${d.showQR?'visible':'hidden'}</span>
             </label>
           `)}
+          ${designerField('QR CODE URL', designerInput('qrUrl', d.qrUrl, 'https://legora.com/film'), 'Where the QR sends visitors when scanned.')}
         `)}
         ${designerSection('3 · Thank-you', `
           <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px;">
@@ -1816,19 +2099,19 @@ function renderAdminDesigner(main){
     el.addEventListener('input', () => updateDesignField(el.dataset.designKey, el.value));
   });
   main.querySelector('#qrToggle').onclick = () => {
-    const cur = DB.getBoothDesign();
+    const cur = DB.getBoothDesign(designerEvId);
     cur.showQR = !cur.showQR;
     persistDesign(cur);
     renderAdmin();
   };
   main.querySelectorAll('.hero-preset').forEach(btn => {
-    btn.onclick = () => { const cur = DB.getBoothDesign(); cur.heroImage = btn.dataset.src; persistDesign(cur); renderAdmin(); };
+    btn.onclick = () => { const cur = DB.getBoothDesign(designerEvId); cur.heroImage = btn.dataset.src; persistDesign(cur); renderAdmin(); };
   });
   main.querySelector('#uploadHero').onclick = () => main.querySelector('#heroFile').click();
   main.querySelector('#heroFile').onchange = e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
     const fr = new FileReader();
-    fr.onload = () => { const cur = DB.getBoothDesign(); cur.heroImage = fr.result; persistDesign(cur); renderAdmin(); };
+    fr.onload = () => { const cur = DB.getBoothDesign(designerEvId); cur.heroImage = fr.result; persistDesign(cur); renderAdmin(); };
     fr.readAsDataURL(f);
   };
   redrawDesignerPreview();
@@ -1846,12 +2129,17 @@ function designerTextarea(key, val, placeholder){
   return `<label class="el-input" style="width:100%; height:auto; align-items:stretch; padding:10px 12px;"><textarea data-design-key="${esc(key)}" placeholder="${esc(placeholder||'')}" rows="3" style="width:100%; border:0; outline:0; background:transparent; font:inherit; color:inherit; resize:vertical; min-height:60px;">${esc(val||'')}</textarea></label>`;
 }
 function updateDesignField(key, val){
-  const cur = DB.getBoothDesign(); cur[key] = val; persistDesign(cur);
+  const cur = DB.getBoothDesign(designerEvId); cur[key] = val; persistDesign(cur);
   redrawDesignerPreview();
 }
-function persistDesign(d){ DB.saveBoothDesign(d); if (FB.ready()) FB.set('config/booth', d); }
+function persistDesign(d){
+  if (!designerEvId) return;
+  DB.saveBoothDesign(designerEvId, d);
+  if (FB.ready()) FB.set('boothDesign/' + designerEvId, d);
+}
 function admResetDesign(){
-  if (!confirm('Reset booth design to defaults?')) return;
+  if (!designerEvId) return;
+  if (!confirm('Reset this event\'s booth design to defaults?')) return;
   persistDesign(defaultBoothDesign());
   renderAdmin();
 }
@@ -1859,11 +2147,11 @@ function setDesignerStep(s){ designerStep = s; redrawDesignerPreview(); }
 function redrawDesignerPreview(){
   const wrap = document.getElementById('designPreviewBox');
   if (!wrap) return;
-  const d = DB.getBoothDesign();
+  const d = DB.getBoothDesign(designerEvId);
   wrap.innerHTML = `<div style="width:${Math.round(402*0.78)}px; height:${Math.round(874*0.78)}px; border-radius:28px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.18), 0 0 0 8px #1c1c1c;"><div style="transform: scale(0.78); transform-origin: top left; width:402px; height:874px; background:#fff; display:flex; flex-direction:column;" id="prev-inner"></div></div>`;
   const inner = document.getElementById('prev-inner');
   inner.innerHTML = `
-    <div style="padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center;">${legoraMark(22)}<span class="el-eyebrow" style="font-size:10px; color:#00311C;">BOOTH · MUNICH</span></div>
+    <div style="padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center;">${legoraMark(22)}<span class="el-eyebrow" style="font-size:10px; color:#00311C;">BOOTH · ${esc((DB.getEvents().find(e=>e.id===designerEvId)||{}).name||'').toUpperCase()}</span></div>
     ${designerStepPreview(d, designerStep)}
     <div style="padding:10px 24px; border-top:1px solid rgba(0,0,0,.06); font-size:11px; color:#6b6b6b; display:flex; justify-content:space-between;"><span>Self-service booth</span><span>0 captured today</span></div>`;
 }
@@ -1888,7 +2176,7 @@ function designerStepPreview(d, step){
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="serif" style="font-size:22px; line-height:28px; font-weight:500; letter-spacing:-0.01em;">${esc(d.filmLine1||'')}<br>${esc(d.filmLine2||'')}<br>${esc(d.filmLine3||'')}</div>
           </div>
-          ${d.showQR ? `<div style="position:absolute; top:14px; right:14px; background:#fff; padding:8px; border-radius:8px;">${fauxQR(72)}</div>` : ''}
+          ${d.showQR ? `<div style="position:absolute; top:14px; right:14px; background:#fff; padding:8px; border-radius:8px;">${realQR(d.qrUrl, 72)}</div>` : ''}
         </div>
       </div>`;
   }
@@ -1901,24 +2189,12 @@ function designerStepPreview(d, step){
 }
 
 function renderAdminSettings(main){
-  const cfg = DB.getFbConfig();
   const hook = DB.getWebhook();
-  const status = FB.ready() ? 'connected' : (cfg ? 'config saved — reload to connect' : 'not configured');
+  const status = FB.ready() ? 'Live sync' : 'Connecting…';
   main.innerHTML = `
     <div style="max-width:720px;">
       <h2 class="serif" style="font-size:26px; font-weight:500; margin:0 0 6px; letter-spacing:-0.01em;">Settings</h2>
-      <p style="color:#6b6b6b; font-size:14px; margin:0 0 22px;">Backend sync and webhooks. Status: <span style="color:${FB.ready() ? '#1a7f4f' : '#9b6b17'}; font-weight:550;">${esc(status)}</span></p>
-      <div class="el-card" style="padding:22px 22px 18px; margin-bottom:18px;">
-        <div class="el-eyebrow" style="margin-bottom:8px;">Firebase Realtime Database</div>
-        <div style="font-size:13px; color:#6b6b6b; margin-bottom:14px;">Paste the Firebase config JSON from your Firebase Console → Project settings → Web app. Kept in localStorage on this device only.</div>
-        <label class="el-input" style="width:100%; height:auto; align-items:stretch; padding:10px 12px; margin-bottom:12px;">
-          <textarea id="fbCfgInput" rows="8" placeholder='{ "apiKey":"...", "databaseURL":"https://...firebaseio.com", "projectId":"..." }' style="width:100%; border:0; outline:0; background:transparent; font:12px/1.5 'JetBrains Mono', monospace; color:inherit; resize:vertical; min-height:120px;">${esc(cfg)}</textarea>
-        </label>
-        <div style="display:flex; gap:8px;">
-          <button class="el-btn el-btn-primary" onclick="admSaveFb()">Save and connect</button>
-          <button class="el-btn el-btn-ghost" onclick="admClearFb()">Clear</button>
-        </div>
-      </div>
+      <p style="color:#6b6b6b; font-size:14px; margin:0 0 22px;">Sync status: <span style="color:${FB.ready() ? '#1a7f4f' : '#9b6b17'}; font-weight:550;">${esc(status)}</span></p>
       <div class="el-card" style="padding:22px 22px 18px;">
         <div class="el-eyebrow" style="margin-bottom:8px;">Webhook (optional)</div>
         <div style="font-size:13px; color:#6b6b6b; margin-bottom:14px;">POST new leads and booth captures to this URL.</div>
@@ -1927,13 +2203,6 @@ function renderAdminSettings(main){
       </div>
     </div>`;
 }
-function admSaveFb(){
-  const v = document.getElementById('fbCfgInput').value.trim();
-  DB.saveFbConfig(v);
-  if (v) connectFirebase(v).then(() => renderAdmin()).catch(e => { alert('Firebase error: ' + e.message); renderAdmin(); });
-  else renderAdmin();
-}
-function admClearFb(){ DB.saveFbConfig(''); renderAdmin(); }
 function admSaveWebhook(){
   const v = document.getElementById('webhookInput').value.trim();
   DB.saveWebhook(v); renderAdmin();
@@ -1948,12 +2217,11 @@ function attachPinKeyboard(){
   });
 }
 function bootstrap(){
-  // Load Firebase config if saved
-  const cfg = DB.getFbConfig();
-  if (cfg) {
-    try { connectFirebase(cfg).catch(err => console.warn('Firebase connect failed:', err.message)); }
-    catch(e){ console.warn('Firebase init error:', e); }
-  }
+  // Drop any legacy user-entered config; the project is now baked-in.
+  try { localStorage.removeItem('le_fb_cfg'); } catch(e){}
+  // Auto-connect to the baked Firebase project (admins don't configure this).
+  try { connectFirebase(FIREBASE_CONFIG).catch(err => console.warn('Firebase connect failed:', err.message)); }
+  catch(e){ console.warn('Firebase init error:', e); }
   // Build PIN keypad + keyboard listener
   buildPinKeypad();
   attachPinKeyboard();
