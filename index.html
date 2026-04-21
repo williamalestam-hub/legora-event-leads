@@ -1458,6 +1458,18 @@ function openQuickLog(attendeeId){
   };
 }
 
+// Send a flat payload to the configured webhook. Uses URL-encoded form so
+// (a) the fetch passes in no-cors mode without a preflight, and
+// (b) Clay parses each field into its own column (JSON body arrives as
+// text/plain in no-cors and Clay leaves it unparsed → empty row).
+function sendWebhook(url, payload){
+  const form = new URLSearchParams();
+  Object.entries(payload).forEach(([k, v]) => form.append(k, v == null ? '' : String(v)));
+  // Also include the full JSON blob so Clay users who want the whole object
+  // in one cell (or need to JSON-decode on their side) can pull it.
+  form.append('_json', JSON.stringify(payload));
+  return fetch(url, { method: 'POST', mode: 'no-cors', body: form });
+}
 function postLeadToWebhook(lead, att, evId){
   const url = DB.getWebhook();
   if (!url) return;
@@ -1478,7 +1490,7 @@ function postLeadToWebhook(lead, att, evId){
     rating: lead.rating,
     notes: lead.notes || '',
   };
-  fetch(url, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) }).catch(() => {});
+  sendWebhook(url, payload).catch(() => {});
 }
 function postBoothToWebhook(cap, evId){
   const url = DB.getWebhook();
@@ -1499,7 +1511,7 @@ function postBoothToWebhook(cap, evId){
     rating: '',
     notes: '',
   };
-  fetch(url, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) }).catch(() => {});
+  sendWebhook(url, payload).catch(() => {});
 }
 
 // ═══════════════ MANAGER DASHBOARD ═══════════════
@@ -2475,7 +2487,7 @@ function admTestWebhook(){
     rating: 'warm',
     notes: 'This is a test event from Event Leads Settings.'
   };
-  fetch(url, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) })
+  sendWebhook(url, payload)
     .then(() => showToast('Test event sent — check Clay'))
     .catch(() => showToast('Send failed — check the URL', 'error'));
 }
