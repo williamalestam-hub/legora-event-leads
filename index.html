@@ -686,7 +686,9 @@ function ratingBadge(r){
   return badge(v, L, true);
 }
 function fmtMinsAgo(ts){
+  if (!ts) return '—';
   const m = Math.floor((Date.now() - ts) / 60000);
+  if (!isFinite(m) || m < 0) return '—';
   if (m < 1) return 'just now';
   if (m < 60) return m + 'm ago';
   const hr = Math.floor(m/60);
@@ -1132,11 +1134,38 @@ function goAdmin(){ goTo('admin'); }
 let boothStep = 'form';
 let boothEmail = '';
 let _boothTimers = [];
+let _boothActiveCapId = '';      // id of the capture currently on-screen
+let _boothActiveScanPath = '';   // Firebase path we're listening for the scan on
 function renderBooth(){
   document.getElementById('boothMark').innerHTML = legoraMark(22);
   const evId = DB.getActiveEventId() || (DB.getEvents()[0] && DB.getEvents()[0].id);
   const ev = DB.getEvents().find(e => e.id === evId);
   renderBoothStep(evId, ev);
+}
+function boothScanUrl(evId, capId, design){
+  // QR routes back through our own app so we can detect the scan via Firebase.
+  // We also include the destination (to=) so the phone's redirect doesn't
+  // depend on another Firebase read succeeding — scan works offline-tolerant.
+  const to = (design && design.qrUrl) ? design.qrUrl : 'https://legora.com';
+  return `${location.origin}${location.pathname}?scan=${encodeURIComponent(capId)}&ev=${encodeURIComponent(evId)}&to=${encodeURIComponent(to)}`;
+}
+function boothCleanupScanListener(){
+  if (_boothActiveScanPath && FB.ready()) FB.off(_boothActiveScanPath);
+  _boothActiveScanPath = '';
+}
+function boothAdvanceToDone(){
+  if (boothStep !== 'jude') return;
+  _boothTimers.forEach(clearTimeout);
+  boothCleanupScanListener();
+  boothStep = 'done';
+  renderBooth();
+  _boothTimers = [
+    setTimeout(() => { boothStep = 'form'; boothEmail = ''; _boothActiveCapId = ''; renderBooth(); }, 3000),
+  ];
+}
+function boothSkip(){
+  // Manual exit on the film screen — kiosk attendant or prospect tapping Done.
+  boothAdvanceToDone();
 }
 function renderBoothStep(evId, ev){
   const d = DB.getBoothDesign(evId);
@@ -1171,6 +1200,7 @@ function renderBoothStep(evId, ev){
     const heroBg = d.heroImage
       ? `<img src="${esc(d.heroImage)}" alt="">`
       : `<div style="position:absolute; inset:0; background:linear-gradient(135deg, #005230 0%, #00311C 100%);"></div>`;
+    const scanUrl = _boothActiveCapId ? boothScanUrl(evId, _boothActiveCapId, d) : (d.qrUrl || '#');
     wrap.innerHTML = `
       <div class="booth-jude">
         <div class="booth-hero">
@@ -1180,12 +1210,13 @@ function renderBoothStep(evId, ev){
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="film-line">${esc(d.filmLine1)}<br>${esc(d.filmLine2)}<br>${esc(d.filmLine3)}</div>
           </div>
-          ${d.showQR ? `<a href="${esc(d.qrUrl||'#')}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none;" aria-label="Scan or tap to open ${esc(d.qrUrl||'')}">${realQR(d.qrUrl, 96)}</a>` : ''}
+          ${d.showQR ? `<a href="${esc(scanUrl)}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none;" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</a>` : ''}
         </div>
         <div style="margin-top:16px; text-align:center;">
           <div class="el-eyebrow" style="margin-bottom:6px;">SCAN TO WATCH THE FILM</div>
           <div style="font-size:13px; color:#595959;">Also sent to <span style="color:#00311C; font-weight:500;">${esc(boothEmail || 'your inbox')}</span></div>
         </div>
+        <button class="el-btn el-btn-ghost" onclick="boothSkip()" style="margin-top:14px; align-self:center; font-size:12px; color:#6b6b6b; padding:6px 14px;">Done</button>
       </div>`;
   } else if (boothStep === 'done'){
     wrap.innerHTML = `
@@ -1208,12 +1239,21 @@ function submitBooth(evId){
   DB.saveBooth(evId, list);
   if (FB.ready()) FB.set('boothCaptures/' + evId + '/' + cap.id, cap);
   postBoothToWebhook(cap, evId);
+  _boothActiveCapId = cap.id;
   boothStep = 'jude';
   renderBooth();
   _boothTimers.forEach(clearTimeout);
+  boothCleanupScanListener();
+  // Listen for the scan marker to auto-advance the moment someone scans the QR.
+  if (FB.ready()) {
+    const path = `scans/${evId}/${cap.id}`;
+    _boothActiveScanPath = path;
+    FB.on(path, val => { if (val) boothAdvanceToDone(); });
+  }
+  // Safety cap: if nobody scans and the attendant doesn't tap Done, reset the
+  // kiosk after 90s so it doesn't stay stuck on the film screen.
   _boothTimers = [
-    setTimeout(() => { boothStep = 'done'; renderBooth(); }, 3200),
-    setTimeout(() => { boothStep = 'form'; boothEmail = ''; renderBooth(); }, 6200),
+    setTimeout(() => boothAdvanceToDone(), 90000),
   ];
 }
 
@@ -1256,17 +1296,23 @@ function renderRepPicker(){
     return;
   }
   list.innerHTML = '';
-  if (!events.length){
-    list.innerHTML = `<div style="padding:30px; text-align:center; color:#6b6b6b; font-size:13px;">No events yet. Ask an admin to add one.</div>`;
+  // Reps only see events marked Live by an admin — no point logging leads
+  // against dormant or upcoming events.
+  const liveEvents = events.filter(ev => ev.active);
+  if (!liveEvents.length){
+    list.innerHTML = `<div style="padding:30px; text-align:center; color:#6b6b6b; font-size:13px;">No live events right now.<br>Ask an admin to mark one as Live.</div>`;
     return;
   }
-  events.forEach(ev => {
+  liveEvents.forEach(ev => {
     const n = DB.getLeads(ev.id).length;
     const card = h('div', { class:'el-card rep-event-card', onclick: () => { DB.setActiveEventId(ev.id); goTo('rep-list'); } });
     card.innerHTML = `
       <div class="rep-event-icon">${legoraStar(16)}</div>
       <div style="flex:1; min-width:0;">
-        <div style="font-size:14px; font-weight:500;">${esc(ev.name)}</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="font-size:14px; font-weight:500;">${esc(ev.name)}</div>
+          ${badge('copper','Live',true)}
+        </div>
         <div style="font-size:12px; color:#6b6b6b; margin-top:2px;">${esc(ev.code || '')}</div>
       </div>
       <span class="mono" style="font-size:12px; color:#595959;">${n} leads</span>
@@ -2159,8 +2205,8 @@ function renderAdminLeads(main, evId){
       <p class="admin-subtext">${leads.length} total</p>
     </div>
     <div class="el-card" style="overflow:hidden;">
-      <div class="admin-table-head" style="grid-template-columns: 2fr 1.5fr 1fr 1.3fr 2fr 1fr;">
-        ${['Attendee','Firm','Rating','Rep','Notes','When'].map(x => `<span class="el-eyebrow" style="font-size:10px;">${esc(x)}</span>`).join('')}
+      <div class="admin-table-head" style="grid-template-columns: 2fr 1.5fr 1fr 1.3fr 2fr 1fr 32px;">
+        ${['Attendee','Firm','Rating','Rep','Notes','When',''].map(x => `<span class="el-eyebrow" style="font-size:10px;">${esc(x)}</span>`).join('')}
       </div>
       <div id="admLeadTable"></div>
     </div>`;
@@ -2173,15 +2219,26 @@ function renderAdminLeads(main, evId){
     const last  = a.last  || l.attendeeLast  || '';
     const company = a.company || l.attendeeCompany || '';
     const repName = (r && r.name) || l.repName || '—';
-    const fullName = (first + ' ' + last).trim() || 'Attendee';
-    const row = h('div', { class:'admin-table-row', style:'grid-template-columns: 2fr 1.5fr 1fr 1.3fr 2fr 1fr;' });
+    const fullName = (first + ' ' + last).trim() || '—';
+    const row = h('div', { class:'admin-table-row', style:'grid-template-columns: 2fr 1.5fr 1fr 1.3fr 2fr 1fr 32px;' });
     row.innerHTML = `
       <div style="display:flex; align-items:center; gap:10px;">${avatarHtml(fullName, 26)}<span style="font-weight:475;">${esc(fullName)}</span></div>
       <span>${esc(company)}</span>
       <span>${ratingBadge(l.rating)}</span>
       <span style="color:#595959;">${esc(repName)}</span>
       <span style="color:#595959; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(l.notes||'')}</span>
-      <span class="mono" style="font-size:12px; color:#6b6b6b;">${fmtMinsAgo(l.timestamp)}</span>`;
+      <span class="mono" style="font-size:12px; color:#6b6b6b;">${fmtMinsAgo(l.timestamp)}</span>
+      <button title="Delete lead" style="background:none; border:none; cursor:pointer; color:#c52925; padding:0; display:flex; align-items:center;" data-lid="${esc(l.id)}">${ICONS.trash}</button>`;
+    row.querySelector('[data-lid]').onclick = () => {
+      confirmModal({ id:'delLead', title:'Delete this lead?', body:'This removes the lead permanently and cannot be undone.', confirmLabel:'Delete', danger:true,
+        onConfirm: () => {
+          const updated = DB.getLeads(evId).filter(x => x.id !== l.id);
+          DB.saveLeads(evId, updated);
+          if (FB.ready()) FB.remove('leads/' + evId + '/' + l.id);
+          renderAdmin();
+        }
+      });
+    };
     tbl.appendChild(row);
   });
 }
@@ -2191,6 +2248,7 @@ function renderAdminBooth(main, evId){
   const ev = DB.getEvents().find(e => e.id === evId);
   if (!ev){ main.innerHTML = `<p style="color:#6b6b6b;">Pick an event from the sidebar.</p>`; return; }
   const caps = DB.getBooth(evId);
+  const atts = DB.getAttendees(evId);
   main.innerHTML = `
     <div style="margin-bottom:20px;">
       <div class="el-eyebrow" style="margin-bottom:6px;">ADMIN · BOOTH · ${esc(ev.name.toUpperCase())}</div>
@@ -2198,19 +2256,36 @@ function renderAdminBooth(main, evId){
       <p class="admin-subtext">Self-service email drops at the booth kiosk.</p>
     </div>
     <div class="el-card" style="overflow:hidden;">
-      <div class="admin-table-head" style="grid-template-columns: 2fr 2fr 1fr;">
-        ${['Email','','When'].map(x => `<span class="el-eyebrow" style="font-size:10px;">${esc(x)}</span>`).join('')}
+      <div class="admin-table-head" style="grid-template-columns: 2.5fr 2fr 1.5fr 1fr 32px;">
+        ${['Email','Name','Firm','When',''].map(x => `<span class="el-eyebrow" style="font-size:10px;">${esc(x)}</span>`).join('')}
       </div>
       <div id="admBoothTable"></div>
     </div>`;
   const tbl = main.querySelector('#admBoothTable');
   if (!caps.length){ tbl.innerHTML = `<div style="padding:40px; text-align:center; color:#6b6b6b;">No captures yet.</div>`; return; }
   caps.forEach(c => {
-    const row = h('div', { class:'admin-table-row', style:'grid-template-columns: 2fr 2fr 1fr;' });
+    // Try to enrich with attendee data by matching email (case-insensitive).
+    const matched = atts.find(a => (a.email||'').toLowerCase() === (c.email||'').toLowerCase());
+    const displayName = matched ? ((matched.first||'') + ' ' + (matched.last||'')).trim() : '—';
+    const firm = matched ? (matched.company || '—') : '—';
+    const avatarSrc = matched ? displayName : c.email;
+    const row = h('div', { class:'admin-table-row', style:'grid-template-columns: 2.5fr 2fr 1.5fr 1fr 32px;' });
     row.innerHTML = `
-      <div style="display:flex; align-items:center; gap:10px;">${avatarHtml(c.email, 26)}<span class="mono" style="font-size:12px;">${esc(c.email||'')}</span></div>
-      <span style="color:#6b6b6b;"></span>
-      <span class="mono" style="font-size:12px; color:#6b6b6b;">${fmtMinsAgo(c.timestamp)}</span>`;
+      <div style="display:flex; align-items:center; gap:10px;">${avatarHtml(avatarSrc, 26)}<span class="mono" style="font-size:12px;">${esc(c.email||'')}</span></div>
+      <span style="color:${matched?'#1c1c1c':'#9b9b9b'}; font-size:13px;">${esc(displayName)}</span>
+      <span style="color:${matched?'#595959':'#9b9b9b'}; font-size:13px;">${esc(firm)}</span>
+      <span class="mono" style="font-size:12px; color:#6b6b6b;">${fmtMinsAgo(c.timestamp)}</span>
+      <button title="Delete capture" style="background:none; border:none; cursor:pointer; color:#c52925; padding:0; display:flex; align-items:center;" data-cid="${esc(c.id)}">${ICONS.trash}</button>`;
+    row.querySelector('[data-cid]').onclick = () => {
+      confirmModal({ id:'delCap', title:'Delete this capture?', body:'This removes the booth capture permanently.', confirmLabel:'Delete', danger:true,
+        onConfirm: () => {
+          const updated = DB.getBooth(evId).filter(x => x.id !== c.id);
+          DB.saveBooth(evId, updated);
+          if (FB.ready()) FB.remove('boothCaptures/' + evId + '/' + c.id);
+          renderAdmin();
+        }
+      });
+    };
     tbl.appendChild(row);
   });
 }
@@ -2507,7 +2582,38 @@ function attachPinKeyboard(){
     else if (e.key === 'Backspace') { pinBack(); e.preventDefault(); }
   });
 }
-function bootstrap(){
+async function handleScanLanding(){
+  // When a prospect scans the booth QR with their phone, the URL includes
+  // ?scan=<capId>&ev=<evId>&to=<destUrl>. Write a scan marker to Firebase so
+  // the kiosk can auto-advance, then redirect to the admin-configured URL.
+  const params = new URLSearchParams(location.search);
+  const scanId = params.get('scan');
+  const scanEv = params.get('ev');
+  const toRaw  = params.get('to');
+  if (!scanId || !scanEv) return false;
+  document.body.innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; background:#f0eee9; font-family:Inter,system-ui,sans-serif; padding:24px;">
+      <div style="text-align:center;">
+        <div style="font-family:'Noto Serif',serif; font-size:24px; color:#00311C; margin-bottom:6px; font-weight:500;">One moment…</div>
+        <div style="color:#6b6b6b; font-size:14px;">Opening the film</div>
+      </div>
+    </div>`;
+  const dest = (toRaw && /^https?:\/\//.test(toRaw)) ? toRaw : 'https://legora.com';
+  const write = (async () => {
+    try {
+      if (FB.init(FIREBASE_CONFIG) && FB.ready()) {
+        await FB.db.ref('scans/' + scanEv + '/' + scanId).set({ timestamp: Date.now(), ua: navigator.userAgent });
+      }
+    } catch(e){ console.warn('scan write failed', e); }
+  })();
+  // Don't let a slow Firebase block the redirect — 1.5s max before we bail.
+  await Promise.race([write, new Promise(r => setTimeout(r, 1500))]);
+  location.replace(dest);
+  return true;
+}
+async function bootstrap(){
+  // Phone-scanned QR? Redirect and skip the PIN gate.
+  if (await handleScanLanding()) return;
   // Drop any legacy user-entered config; the project is now baked-in.
   try { localStorage.removeItem('le_fb_cfg'); } catch(e){}
   // Auto-connect to the baked Firebase project (admins don't configure this).
