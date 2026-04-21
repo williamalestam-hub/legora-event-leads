@@ -1058,10 +1058,6 @@ function renderBoothStep(evId, ev){
           <input id="boothEmail" placeholder="Email address" type="email" autocomplete="email" value="${esc(boothEmail)}">
         </label>
         <button id="boothSubmit" class="el-btn el-btn-xl el-btn-block booth-cta" style="opacity:.4; cursor:not-allowed;">${esc(d.cta)}</button>
-        <div style="margin-top:auto; padding-top:36px; display:flex; align-items:center; gap:10px; color:#6b6b6b; font-size:12px;">
-          ${legoraStar(14)}<span>${esc(ev ? ev.name : '')}</span>
-          <span style="margin-left:auto;" class="mono">${DB.getBooth(evId || '').length} today</span>
-        </div>
       </div>`;
     const input = document.getElementById('boothEmail');
     const submit = document.getElementById('boothSubmit');
@@ -1215,7 +1211,7 @@ function renderRepList(){
   const evId = DB.getActiveEventId();
   const ev = DB.getEvents().find(e => e.id === evId);
   const rep = DB.getReps().find(r => r.id === DB.getActiveRepId());
-  if (!ev){ goTo('rep-picker'); return; }
+  if (!ev || !rep){ goTo('rep-picker'); return; }
   document.getElementById('repListEvent').textContent = ev.name;
   document.getElementById('repListRep').textContent = rep ? rep.name : 'Rep';
   const leads = DB.getLeads(evId);
