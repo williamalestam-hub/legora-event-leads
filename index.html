@@ -791,11 +791,21 @@ const DB = {
   setActiveRepId(id)     { id ? localStorage.setItem('le_rep_id', id) : localStorage.removeItem('le_rep_id'); },
   getActiveEventId()     { return localStorage.getItem('le_ev_id') || ''; },
   setActiveEventId(id)   { id ? localStorage.setItem('le_ev_id', id) : localStorage.removeItem('le_ev_id'); },
-  getBoothDesign() {
-    const raw = localStorage.getItem('le_booth_design');
-    return raw ? JSON.parse(raw) : defaultBoothDesign();
+  getBoothDesign(evId) {
+    const id = evId || DB.getActiveEventId();
+    if (id){
+      const raw = localStorage.getItem('le_booth_design_' + id);
+      if (raw) return Object.assign(defaultBoothDesign(), JSON.parse(raw));
+    }
+    // Legacy fallback: single global design used before per-event split.
+    const legacy = localStorage.getItem('le_booth_design');
+    return legacy ? Object.assign(defaultBoothDesign(), JSON.parse(legacy)) : defaultBoothDesign();
   },
-  saveBoothDesign(d)     { localStorage.setItem('le_booth_design', JSON.stringify(d)); },
+  saveBoothDesign(evId, d) {
+    if (typeof evId === 'object' && evId !== null && d === undefined) { d = evId; evId = DB.getActiveEventId(); }
+    if (!evId) return;
+    localStorage.setItem('le_booth_design_' + evId, JSON.stringify(d));
+  },
   getWebhook()           { return localStorage.getItem('le_webhook') || ''; },
   saveWebhook(u)         { localStorage.setItem('le_webhook', u); },
   getFbConfig()          { return localStorage.getItem('le_fb_cfg') || ''; },
@@ -890,11 +900,11 @@ async function pushLocalToFirebase(){
     if (leads.length){ const o = {}; leads.forEach(l => o[l.id] = l); FB.set('leads/' + ev.id, o); }
     const booth = DB.getBooth(ev.id);
     if (booth.length){ const o = {}; booth.forEach(b => o[b.id] = b); FB.set('boothCaptures/' + ev.id, o); }
+    const evDesign = DB.getBoothDesign(ev.id);
+    FB.set('boothDesign/' + ev.id, evDesign);
   }
   const reps = DB.getReps();
   if (reps.length){ const o = {}; reps.forEach(r => o[r.id] = r); FB.set('config/reps', o); }
-  const design = DB.getBoothDesign();
-  FB.set('config/booth', design);
 }
 
 async function pullFromFirebase(){
@@ -913,11 +923,11 @@ async function pullFromFirebase(){
     if (leads) DB.saveLeads(ev.id, Object.values(leads).filter(Boolean));
     const booth = await FB.once('boothCaptures/' + ev.id);
     if (booth) DB.saveBooth(ev.id, Object.values(booth).filter(Boolean));
+    const evDesign = await FB.once('boothDesign/' + ev.id);
+    if (evDesign) DB.saveBoothDesign(ev.id, Object.assign(defaultBoothDesign(), evDesign));
   }
   const reps = await FB.once('config/reps');
   if (reps) DB.saveReps(Object.values(reps).filter(Boolean));
-  const design = await FB.once('config/booth');
-  if (design) DB.saveBoothDesign(Object.assign(defaultBoothDesign(), design));
 }
 
 function setupFirebaseListeners(){
@@ -929,10 +939,6 @@ function setupFirebaseListeners(){
     if (obj) DB.saveReps(Object.values(obj).filter(Boolean));
     rerenderActiveScreen();
   });
-  FB.on('config/booth', design => {
-    if (design) DB.saveBoothDesign(Object.assign(defaultBoothDesign(), design));
-    rerenderActiveScreen();
-  });
   for (const ev of DB.getEvents()){
     FB.on('attendees/' + ev.id, obj => {
       if (obj) DB.saveAttendees(ev.id, Object.values(obj).filter(Boolean));
@@ -940,6 +946,10 @@ function setupFirebaseListeners(){
     });
     FB.on('leads/' + ev.id, obj => {
       DB.saveLeads(ev.id, obj ? Object.values(obj).filter(Boolean) : []);
+      rerenderActiveScreen();
+    });
+    FB.on('boothDesign/' + ev.id, design => {
+      if (design) DB.saveBoothDesign(ev.id, Object.assign(defaultBoothDesign(), design));
       rerenderActiveScreen();
     });
     FB.on('boothCaptures/' + ev.id, obj => {
@@ -1058,7 +1068,7 @@ function renderBooth(){
   renderBoothStep(evId, ev);
 }
 function renderBoothStep(evId, ev){
-  const d = DB.getBoothDesign();
+  const d = DB.getBoothDesign(evId);
   const wrap = document.getElementById('boothContent');
   if (boothStep === 'form'){
     wrap.innerHTML = `
@@ -1861,16 +1871,44 @@ function renderAdminBooth(main, evId){
 
 // ═══ Admin: Booth Designer ═══
 let designerStep = 'form';
+let designerEvId = '';
 function renderAdminDesigner(main){
-  const d = DB.getBoothDesign();
-  main.innerHTML = `
-    <div style="margin-bottom:20px; display:flex; align-items:flex-end; justify-content:space-between; gap:16px;">
-      <div>
+  const events = DB.getEvents();
+  if (!events.length){
+    main.innerHTML = `
+      <div style="margin-bottom:20px;">
         <div class="el-eyebrow" style="margin-bottom:6px;">ADMIN · BOOTH DESIGNER</div>
         <h1 class="admin-h1">Booth designer</h1>
-        <p class="admin-subtext">Shape the kiosk visitors see — copy, hero image, QR toggle. Changes go live on every booth iPad instantly.</p>
       </div>
-      <button class="el-btn el-btn-ghost" onclick="admResetDesign()">Reset to default</button>
+      <div class="el-card" style="padding:40px; text-align:center; color:#6b6b6b;">
+        Create an event first. Each event has its own booth design so you can run different campaigns in parallel.
+        <div style="margin-top:14px;"><button class="el-btn el-btn-primary" onclick="switchAdminTab('events')">Go to events</button></div>
+      </div>`;
+    return;
+  }
+  if (!designerEvId || !events.find(e => e.id === designerEvId)){
+    const active = events.find(e => e.active);
+    designerEvId = (active && active.id) || events[0].id;
+  }
+  const evId = designerEvId;
+  const ev = events.find(e => e.id === evId);
+  const d = DB.getBoothDesign(evId);
+  main.innerHTML = `
+    <div style="margin-bottom:20px; display:flex; align-items:flex-end; justify-content:space-between; gap:16px;">
+      <div style="flex:1; min-width:0;">
+        <div class="el-eyebrow" style="margin-bottom:6px;">ADMIN · BOOTH DESIGNER</div>
+        <h1 class="admin-h1">Booth designer</h1>
+        <p class="admin-subtext">Each event has its own kiosk design. Pick which one to edit — changes sync live to that event's booth.</p>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+        <label class="el-eyebrow">EDITING</label>
+        <label class="el-input" style="min-width:260px;">
+          <select id="designEvSelect" style="border:0; outline:0; background:transparent; font:inherit; color:inherit; width:100%;">
+            ${events.map(e => `<option value="${esc(e.id)}" ${e.id===evId?'selected':''}>${esc(e.name)}${e.active?' · live':''}</option>`).join('')}
+          </select>
+        </label>
+        <button class="el-btn el-btn-ghost" onclick="admResetDesign()" style="align-self:flex-end;">Reset to default</button>
+      </div>
     </div>
     <div style="display:grid; grid-template-columns: 1fr 440px; gap:36px; align-items:flex-start;" id="designGrid">
       <div class="el-card" style="padding:24px 26px;">
@@ -1932,23 +1970,24 @@ function renderAdminDesigner(main){
         </div>
       </div>
     </div>`;
+  main.querySelector('#designEvSelect').onchange = e => { designerEvId = e.target.value; renderAdmin(); };
   main.querySelectorAll('[data-design-key]').forEach(el => {
     el.addEventListener('input', () => updateDesignField(el.dataset.designKey, el.value));
   });
   main.querySelector('#qrToggle').onclick = () => {
-    const cur = DB.getBoothDesign();
+    const cur = DB.getBoothDesign(designerEvId);
     cur.showQR = !cur.showQR;
     persistDesign(cur);
     renderAdmin();
   };
   main.querySelectorAll('.hero-preset').forEach(btn => {
-    btn.onclick = () => { const cur = DB.getBoothDesign(); cur.heroImage = btn.dataset.src; persistDesign(cur); renderAdmin(); };
+    btn.onclick = () => { const cur = DB.getBoothDesign(designerEvId); cur.heroImage = btn.dataset.src; persistDesign(cur); renderAdmin(); };
   });
   main.querySelector('#uploadHero').onclick = () => main.querySelector('#heroFile').click();
   main.querySelector('#heroFile').onchange = e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
     const fr = new FileReader();
-    fr.onload = () => { const cur = DB.getBoothDesign(); cur.heroImage = fr.result; persistDesign(cur); renderAdmin(); };
+    fr.onload = () => { const cur = DB.getBoothDesign(designerEvId); cur.heroImage = fr.result; persistDesign(cur); renderAdmin(); };
     fr.readAsDataURL(f);
   };
   redrawDesignerPreview();
@@ -1966,12 +2005,17 @@ function designerTextarea(key, val, placeholder){
   return `<label class="el-input" style="width:100%; height:auto; align-items:stretch; padding:10px 12px;"><textarea data-design-key="${esc(key)}" placeholder="${esc(placeholder||'')}" rows="3" style="width:100%; border:0; outline:0; background:transparent; font:inherit; color:inherit; resize:vertical; min-height:60px;">${esc(val||'')}</textarea></label>`;
 }
 function updateDesignField(key, val){
-  const cur = DB.getBoothDesign(); cur[key] = val; persistDesign(cur);
+  const cur = DB.getBoothDesign(designerEvId); cur[key] = val; persistDesign(cur);
   redrawDesignerPreview();
 }
-function persistDesign(d){ DB.saveBoothDesign(d); if (FB.ready()) FB.set('config/booth', d); }
+function persistDesign(d){
+  if (!designerEvId) return;
+  DB.saveBoothDesign(designerEvId, d);
+  if (FB.ready()) FB.set('boothDesign/' + designerEvId, d);
+}
 function admResetDesign(){
-  if (!confirm('Reset booth design to defaults?')) return;
+  if (!designerEvId) return;
+  if (!confirm('Reset this event\'s booth design to defaults?')) return;
   persistDesign(defaultBoothDesign());
   renderAdmin();
 }
@@ -1979,11 +2023,11 @@ function setDesignerStep(s){ designerStep = s; redrawDesignerPreview(); }
 function redrawDesignerPreview(){
   const wrap = document.getElementById('designPreviewBox');
   if (!wrap) return;
-  const d = DB.getBoothDesign();
+  const d = DB.getBoothDesign(designerEvId);
   wrap.innerHTML = `<div style="width:${Math.round(402*0.78)}px; height:${Math.round(874*0.78)}px; border-radius:28px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.18), 0 0 0 8px #1c1c1c;"><div style="transform: scale(0.78); transform-origin: top left; width:402px; height:874px; background:#fff; display:flex; flex-direction:column;" id="prev-inner"></div></div>`;
   const inner = document.getElementById('prev-inner');
   inner.innerHTML = `
-    <div style="padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center;">${legoraMark(22)}<span class="el-eyebrow" style="font-size:10px; color:#00311C;">BOOTH · MUNICH</span></div>
+    <div style="padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center;">${legoraMark(22)}<span class="el-eyebrow" style="font-size:10px; color:#00311C;">BOOTH · ${esc((DB.getEvents().find(e=>e.id===designerEvId)||{}).name||'').toUpperCase()}</span></div>
     ${designerStepPreview(d, designerStep)}
     <div style="padding:10px 24px; border-top:1px solid rgba(0,0,0,.06); font-size:11px; color:#6b6b6b; display:flex; justify-content:space-between;"><span>Self-service booth</span><span>0 captured today</span></div>`;
 }
