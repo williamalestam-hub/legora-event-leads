@@ -1144,6 +1144,8 @@ let boothEmail = '';
 let _boothTimers = [];
 let _boothActiveCapId = '';      // id of the capture currently on-screen
 let _boothActiveScanPath = '';   // Firebase path we're listening for the scan on
+let _boothJudeStartedAt = 0;     // wall-clock ms when the film screen appeared
+const BOOTH_MIN_FILM_MS = 10000; // minimum time the film screen must stay visible
 function renderBooth(){
   document.getElementById('boothMark').innerHTML = legoraMark(22);
   const evId = DB.getActiveEventId() || (DB.getEvents()[0] && DB.getEvents()[0].id);
@@ -1161,8 +1163,17 @@ function boothCleanupScanListener(){
   if (_boothActiveScanPath && FB.ready()) FB.off(_boothActiveScanPath);
   _boothActiveScanPath = '';
 }
-function boothAdvanceToDone(){
+function boothAdvanceToDone(opts){
   if (boothStep !== 'jude') return;
+  const force = opts && opts.force;
+  // Guard against accidental early advance (stale scan markers, race conditions,
+  // accidental taps). The film screen must stay visible for BOOTH_MIN_FILM_MS
+  // unless force=true (manual Done tap or the long safety timeout).
+  const elapsed = Date.now() - _boothJudeStartedAt;
+  if (!force && elapsed < BOOTH_MIN_FILM_MS) {
+    _boothTimers.push(setTimeout(() => boothAdvanceToDone(opts), BOOTH_MIN_FILM_MS - elapsed));
+    return;
+  }
   _boothTimers.forEach(clearTimeout);
   boothCleanupScanListener();
   boothStep = 'done';
@@ -1173,7 +1184,7 @@ function boothAdvanceToDone(){
 }
 function boothSkip(){
   // Manual exit on the film screen — kiosk attendant or prospect tapping Done.
-  boothAdvanceToDone();
+  boothAdvanceToDone({ force: true });
 }
 function renderBoothStep(evId, ev){
   const d = DB.getBoothDesign(evId);
@@ -1231,7 +1242,7 @@ function renderBoothStep(evId, ev){
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="film-line">${esc(d.filmLine1)}<br>${esc(d.filmLine2)}<br>${esc(d.filmLine3)}</div>
           </div>
-          ${d.showQR ? `<a href="${esc(scanUrl)}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none; position:absolute; left:${qx}%; top:${qy}%;" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</a>` : ''}
+          ${d.showQR ? `<div class="booth-qr" style="position:absolute; left:${qx}%; top:${qy}%; pointer-events:none;" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</div>` : ''}
         </div>
         <div style="margin-top:16px; text-align:center;">
           <div class="el-eyebrow" style="margin-bottom:6px;">SCAN TO WATCH THE FILM</div>
@@ -1261,20 +1272,26 @@ function submitBooth(evId){
   if (FB.ready()) FB.set('boothCaptures/' + evId + '/' + cap.id, cap);
   postBoothToWebhook(cap, evId);
   _boothActiveCapId = cap.id;
+  _boothJudeStartedAt = Date.now();
   boothStep = 'jude';
   renderBooth();
   _boothTimers.forEach(clearTimeout);
   boothCleanupScanListener();
   // Listen for the scan marker to auto-advance the moment someone scans the QR.
+  // Only accept markers written AFTER this capture started — prevents stale data
+  // or listener-attach echoes from advancing prematurely.
   if (FB.ready()) {
     const path = `scans/${evId}/${cap.id}`;
     _boothActiveScanPath = path;
-    FB.on(path, val => { if (val) boothAdvanceToDone(); });
+    const startedAt = _boothJudeStartedAt;
+    FB.on(path, val => {
+      if (val && val.timestamp && val.timestamp >= startedAt) boothAdvanceToDone();
+    });
   }
-  // Safety cap: if nobody scans and the attendant doesn't tap Done, reset the
-  // kiosk after 90s so it doesn't stay stuck on the film screen.
+  // Safety cap: if nobody scans and the attendant doesn't tap Done, force-reset
+  // the kiosk after 5 minutes so it doesn't stay stuck on the film screen.
   _boothTimers = [
-    setTimeout(() => boothAdvanceToDone(), 90000),
+    setTimeout(() => boothAdvanceToDone({ force: true }), 300000),
   ];
 }
 
