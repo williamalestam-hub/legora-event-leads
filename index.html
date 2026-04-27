@@ -1023,7 +1023,14 @@ function setupFirebaseListeners(){
       rerenderActiveScreen();
     });
     FB.on('leads/' + ev.id, obj => {
-      if (obj) DB.saveLeads(ev.id, Object.values(obj).filter(Boolean));
+      if (obj) {
+        const serverLeads = Object.values(obj).filter(Boolean);
+        const serverIds = new Set(serverLeads.map(l => l.id));
+        // Keep any locally-saved lead not yet confirmed by the server so a
+        // Firebase auth rollback doesn't erase a lead the rep just logged.
+        const pendingLocal = DB.getLeads(ev.id).filter(l => !serverIds.has(l.id));
+        DB.saveLeads(ev.id, [...serverLeads, ...pendingLocal]);
+      }
       rerenderActiveScreen();
     });
     FB.on('boothDesign/' + ev.id, design => {
@@ -1604,7 +1611,7 @@ function postLeadToWebhook(lead, att, evId, isUpdate){
     rating: lead.rating,
     notes: lead.notes || '',
   };
-  sendWebhook(url, payload).catch(() => {});
+  sendWebhook(url, payload).catch(err => showToast('Webhook failed: ' + (err && err.message || 'network error'), 'error'));
 }
 function postBoothToWebhook(cap, evId){
   const url = DB.getWebhook();
@@ -2773,7 +2780,7 @@ function admTestWebhook(){
   };
   sendWebhook(url, payload)
     .then(() => showToast('Test event sent — check Clay'))
-    .catch(() => showToast('Send failed — check the URL', 'error'));
+    .catch(err => showToast('Send failed: ' + (err && err.message || 'network error'), 'error'));
 }
 
 // ────────── Bootstrap ──────────
