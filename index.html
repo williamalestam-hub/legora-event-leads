@@ -1559,7 +1559,7 @@ function openQuickLog(attendeeId, existingLead){
       rating,
       notes: notes.trim(),
       timestamp: isEdit ? existingLead.timestamp : Date.now(),
-      updatedAt: isEdit ? Date.now() : undefined,
+      ...(isEdit ? { updatedAt: Date.now() } : {}),
       attendeeFirst: att.first || '',
       attendeeLast: att.last || '',
       attendeeCompany: att.company || '',
