@@ -1592,7 +1592,10 @@ function sendWebhook(url, payload){
   // Also include the full JSON blob so Clay users who want the whole object
   // in one cell (or need to JSON-decode on their side) can pull it.
   form.append('_json', JSON.stringify(payload));
-  return fetch(url, { method: 'POST', mode: 'no-cors', body: form });
+  // keepalive lets the POST finish even if the rep flow navigates away
+  // immediately after submitting (which a Settings test never does).
+  console.log('[webhook] POST', url, payload);
+  return fetch(url, { method: 'POST', mode: 'no-cors', body: form, keepalive: true });
 }
 function postLeadToWebhook(lead, att, evId, isUpdate){
   const url = DB.getWebhook();
