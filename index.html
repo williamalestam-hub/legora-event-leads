@@ -606,6 +606,7 @@ body {
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 
@@ -886,6 +887,7 @@ function defaultBoothDesign(){
     thanksHeadline: 'Got it.',
     thanksBody: 'The film is on its way to your inbox.\nSee you on the other side.',
     heroImage: '',
+    formImage: '',
     showQR: true,
     qrUrl: 'https://legora.com',
   };
@@ -906,6 +908,11 @@ const FB = {
     } catch(e){ console.error('FB init', e); this.app = null; this.db = null; return false; }
   },
   ready(){ return !!this.db; },
+  async signIn(){
+    if (!this.app) return;
+    try { await firebase.auth(this.app).signInAnonymously(); }
+    catch(e){ console.warn('FB signIn', e); }
+  },
   set(path, data){ if (this.db) this.db.ref(path).set(data).catch(e => console.warn('FB set', path, e)); },
   remove(path){ if (this.db) this.db.ref(path).remove().catch(e => console.warn('FB rm', path, e)); },
   async once(path){
@@ -940,6 +947,7 @@ async function connectFirebase(cfg){
   if (!cfg) return false;
   setFbStatus('', 'Connecting…');
   if (!FB.init(cfg)) { setFbStatus('err', 'Invalid config'); return false; }
+  await FB.signIn();
   // Pull server state first so a reload never stomps newer server data with
   // stale local data. Individual user actions write directly to Firebase, so
   // we don't need a bulk push on startup.
@@ -1143,6 +1151,8 @@ let boothEmail = '';
 let _boothTimers = [];
 let _boothActiveCapId = '';      // id of the capture currently on-screen
 let _boothActiveScanPath = '';   // Firebase path we're listening for the scan on
+let _boothJudeStartedAt = 0;     // wall-clock ms when the film screen appeared
+const BOOTH_MIN_FILM_MS = 10000; // minimum time the film screen must stay visible
 function renderBooth(){
   document.getElementById('boothMark').innerHTML = legoraMark(22);
   const evId = DB.getActiveEventId() || (DB.getEvents()[0] && DB.getEvents()[0].id);
@@ -1160,8 +1170,17 @@ function boothCleanupScanListener(){
   if (_boothActiveScanPath && FB.ready()) FB.off(_boothActiveScanPath);
   _boothActiveScanPath = '';
 }
-function boothAdvanceToDone(){
+function boothAdvanceToDone(opts){
   if (boothStep !== 'jude') return;
+  const force = opts && opts.force;
+  // Guard against accidental early advance (stale scan markers, race conditions,
+  // accidental taps). The film screen must stay visible for BOOTH_MIN_FILM_MS
+  // unless force=true (manual Done tap or the long safety timeout).
+  const elapsed = Date.now() - _boothJudeStartedAt;
+  if (!force && elapsed < BOOTH_MIN_FILM_MS) {
+    _boothTimers.push(setTimeout(() => boothAdvanceToDone(opts), BOOTH_MIN_FILM_MS - elapsed));
+    return;
+  }
   _boothTimers.forEach(clearTimeout);
   boothCleanupScanListener();
   boothStep = 'done';
@@ -1172,22 +1191,32 @@ function boothAdvanceToDone(){
 }
 function boothSkip(){
   // Manual exit on the film screen — kiosk attendant or prospect tapping Done.
-  boothAdvanceToDone();
+  boothAdvanceToDone({ force: true });
 }
 function renderBoothStep(evId, ev){
   const d = DB.getBoothDesign(evId);
   const wrap = document.getElementById('boothContent');
   const formAlignClass = d.formContentAlign === 'center' ? ' align-center' : d.formContentAlign === 'bottom' ? ' align-bottom' : '';
   if (boothStep === 'form'){
-    wrap.innerHTML = `
-      <div class="booth-form${formAlignClass}">
+    const justifyMap = { center: 'center', bottom: 'flex-end', top: 'flex-start' };
+    const fJustify = justifyMap[d.formContentAlign] || 'flex-start';
+    const formFields = `
         <h1 class="booth-heading">${esc(d.heading)}</h1>
         <p class="booth-sub">${esc(d.subhead)}</p>
         <label class="el-input" id="boothEmailWrap" style="margin-bottom:18px; height:48px;">
           ${ICONS.mail}
           <input id="boothEmail" placeholder="Email address" type="email" autocomplete="email" value="${esc(boothEmail)}">
         </label>
-        <button id="boothSubmit" class="el-btn el-btn-xl el-btn-block booth-cta" style="opacity:.4; cursor:not-allowed;">${esc(d.cta)}</button>
+        <button id="boothSubmit" class="el-btn el-btn-xl el-btn-block booth-cta" style="opacity:.4; cursor:not-allowed;">${esc(d.cta)}</button>`;
+    wrap.innerHTML = d.formImage ? `
+      <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="height:220px; flex-shrink:0; background:url(${esc(d.formImage)}) center/cover;"></div>
+        <div style="flex:1; display:flex; flex-direction:column; padding:24px 28px; overflow:auto; justify-content:${fJustify};">
+          ${formFields}
+        </div>
+      </div>` : `
+      <div class="booth-form${formAlignClass}">
+        ${formFields}
       </div>`;
     const input = document.getElementById('boothEmail');
     const submit = document.getElementById('boothSubmit');
@@ -1220,7 +1249,7 @@ function renderBoothStep(evId, ev){
             ${d.filmEyebrow ? `<div class="el-eyebrow" style="color:rgba(255,255,255,.7); margin-bottom:8px;">${esc(d.filmEyebrow)}</div>` : ''}
             <div class="film-line">${esc(d.filmLine1)}<br>${esc(d.filmLine2)}<br>${esc(d.filmLine3)}</div>
           </div>
-          ${d.showQR ? `<a href="${esc(scanUrl)}" target="_blank" rel="noopener" class="booth-qr" style="text-decoration:none; position:absolute; left:${qx}%; top:${qy}%;" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</a>` : ''}
+          ${d.showQR ? `<div class="booth-qr" style="position:absolute; left:${qx}%; top:${qy}%; pointer-events:none;" aria-label="Scan to watch the film">${realQR(scanUrl, 96)}</div>` : ''}
         </div>
         <div style="margin-top:16px; text-align:center;">
           <div class="el-eyebrow" style="margin-bottom:6px;">SCAN TO WATCH THE FILM</div>
@@ -1250,20 +1279,26 @@ function submitBooth(evId){
   if (FB.ready()) FB.set('boothCaptures/' + evId + '/' + cap.id, cap);
   postBoothToWebhook(cap, evId);
   _boothActiveCapId = cap.id;
+  _boothJudeStartedAt = Date.now();
   boothStep = 'jude';
   renderBooth();
   _boothTimers.forEach(clearTimeout);
   boothCleanupScanListener();
   // Listen for the scan marker to auto-advance the moment someone scans the QR.
+  // Only accept markers written AFTER this capture started — prevents stale data
+  // or listener-attach echoes from advancing prematurely.
   if (FB.ready()) {
     const path = `scans/${evId}/${cap.id}`;
     _boothActiveScanPath = path;
-    FB.on(path, val => { if (val) boothAdvanceToDone(); });
+    const startedAt = _boothJudeStartedAt;
+    FB.on(path, val => {
+      if (val && val.timestamp && val.timestamp >= startedAt) boothAdvanceToDone();
+    });
   }
-  // Safety cap: if nobody scans and the attendant doesn't tap Done, reset the
-  // kiosk after 90s so it doesn't stay stuck on the film screen.
+  // Safety cap: if nobody scans and the attendant doesn't tap Done, force-reset
+  // the kiosk after 5 minutes so it doesn't stay stuck on the film screen.
   _boothTimers = [
-    setTimeout(() => boothAdvanceToDone(), 90000),
+    setTimeout(() => boothAdvanceToDone({ force: true }), 300000),
   ];
 }
 
@@ -1942,12 +1977,20 @@ function renderAdminEvents(main){
       <span style="color:#595959;">${esc(ev.date||'')}</span>
       <span class="mono">${DB.getAttendees(ev.id).length}</span>
       <span class="mono">${DB.getLeads(ev.id).length}</span>
-      <span class="mono">${DB.getBooth(ev.id).length}</span>
-      <div style="display:flex; gap:4px; justify-content:flex-end;">
-        <button class="el-btn el-btn-ghost" style="width:28px; height:28px; padding:0; justify-content:center;" onclick="event.stopPropagation(); admToggleActive('${ev.id}')" title="Make active">${ev.active?'●':'○'}</button>
-        <button class="el-btn el-btn-ghost" style="font-size:11px; padding:4px 10px; height:28px;" onclick="event.stopPropagation(); openEventScope('${ev.id}')">Open</button>
-        <button class="el-btn el-btn-ghost" style="width:28px; height:28px; padding:0; justify-content:center;" onclick="event.stopPropagation(); admDeleteEvent('${ev.id}')" title="Delete">${ICONS.trash}</button>
-      </div>`;
+      <span class="mono">${DB.getBooth(ev.id).length}</span>`;
+    // Action buttons built via DOM (not innerHTML) to avoid XSS via crafted ev.id
+    const actDiv = h('div', { style:'display:flex; gap:4px; justify-content:flex-end;' });
+    const toggleBtn = h('button', { class:'el-btn el-btn-ghost', style:'width:28px; height:28px; padding:0; justify-content:center;', title:'Toggle active' });
+    toggleBtn.innerHTML = ev.active ? '●' : '○';
+    toggleBtn.onclick = e => { e.stopPropagation(); admToggleActive(ev.id); };
+    const openBtn = h('button', { class:'el-btn el-btn-ghost', style:'font-size:11px; padding:4px 10px; height:28px;' });
+    openBtn.textContent = 'Open';
+    openBtn.onclick = e => { e.stopPropagation(); openEventScope(ev.id); };
+    const delBtn = h('button', { class:'el-btn el-btn-ghost', style:'width:28px; height:28px; padding:0; justify-content:center;', title:'Delete' });
+    delBtn.innerHTML = ICONS.trash;
+    delBtn.onclick = e => { e.stopPropagation(); admDeleteEvent(ev.id); };
+    actDiv.append(toggleBtn, openBtn, delBtn);
+    row.appendChild(actDiv);
     tbl.appendChild(row);
   });
 }
@@ -2091,9 +2134,9 @@ function renderAdminAttendees(main, evId){
     </div>
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
       <label class="el-input" style="flex:1;">${ICONS.search}<input id="admAttSearch" placeholder="Search attendees…"></label>
-      <button class="el-btn el-btn-secondary" onclick="document.getElementById('admCsvInput').click()">${ICONS.download} Import CSV</button>
-      <input type="file" id="admCsvInput" accept=".csv" style="display:none" onchange="admImportCSV(this, '${evId}')">
-      <button class="el-btn el-btn-primary" onclick="admAddAttendee('${evId}')">${ICONS.plus} Add attendee</button>
+      <button id="admCsvBtn" class="el-btn el-btn-secondary">${ICONS.download} Import CSV</button>
+      <input type="file" id="admCsvInput" accept=".csv" style="display:none">
+      <button id="admAddAttBtn" class="el-btn el-btn-primary">${ICONS.plus} Add attendee</button>
     </div>
     <div class="el-card" style="overflow:hidden;">
       <div class="admin-table-head" style="grid-template-columns: 2fr 2fr 2fr 1.3fr 80px;">
@@ -2101,6 +2144,10 @@ function renderAdminAttendees(main, evId){
       </div>
       <div id="admAttTable" style="max-height: 560px; overflow:auto;" class="el-scroll"></div>
     </div>`;
+  // Wire up buttons via addEventListener — IDs must not appear in inline onclick
+  main.querySelector('#admCsvBtn').onclick = () => main.querySelector('#admCsvInput').click();
+  main.querySelector('#admCsvInput').onchange = e => admImportCSV(e.target, evId);
+  main.querySelector('#admAddAttBtn').onclick = () => admAddAttendee(evId);
   const q = main.querySelector('#admAttSearch');
   const redraw = () => {
     const qv = (q.value||'').toLowerCase();
@@ -2117,8 +2164,12 @@ function renderAdminAttendees(main, evId){
         <div style="display:flex; align-items:center; gap:10px;">${avatarHtml(a.first+' '+a.last, 26)}<span style="font-weight:475;">${esc(a.first||'')} ${esc(a.last||'')}</span></div>
         <span class="mono" style="font-size:12px; color:#595959;">${esc(a.email||'')}</span>
         <span>${esc(a.company||'')}</span>
-        <span style="color:#595959;">${esc(a.title||'')}</span>
-        <button class="el-btn el-btn-ghost" style="width:28px; height:28px; padding:0; justify-content:center;" onclick="admRemoveAttendee('${evId}','${a.id}')">${ICONS.trash}</button>`;
+        <span style="color:#595959;">${esc(a.title||'')}</span>`;
+      // Delete button built via DOM to avoid XSS via crafted a.id / evId
+      const attDel = h('button', { class:'el-btn el-btn-ghost', style:'width:28px; height:28px; padding:0; justify-content:center;' });
+      attDel.innerHTML = ICONS.trash;
+      attDel.onclick = () => admRemoveAttendee(evId, a.id);
+      row.appendChild(attDel);
       tbl.appendChild(row);
     });
   };
@@ -2348,6 +2399,23 @@ function renderAdminDesigner(main){
           ${designerField('SUBTEXT', designerTextarea('subhead', d.subhead, 'Drop your email…'))}
           ${designerField('CTA BUTTON', designerInput('cta', d.cta, 'Submit →'))}
           ${designerField('CONTENT POSITION', designerSegment('formContentAlign', d.formContentAlign||'top', [['top','Top'],['center','Center'],['bottom','Bottom']]), 'Vertical alignment of the headline and form fields.')}
+          ${designerField('FORM IMAGE', `
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;" id="formImgRow">
+              ${d.formImage ? `
+              <div style="position:relative; flex-shrink:0;">
+                <div style="width:72px; height:72px; border-radius:6px; border:2px solid #1c1c1c; background:url(${esc(d.formImage)}) center/cover; position:relative; overflow:hidden;">
+                  <span style="position:absolute; bottom:4px; left:0; right:0; text-align:center; font-size:9px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); font-weight:500;">Current</span>
+                </div>
+                <button id="removeFormImg" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:#1c1c1c; color:#fff; border:0; cursor:pointer; font-size:13px; line-height:18px; text-align:center; z-index:2; padding:0;">×</button>
+              </div>` : ''}
+              <button id="uploadFormImg" style="width:72px; height:72px; border-radius:6px; cursor:pointer; padding:0; border:1px dashed rgba(0,0,0,.25); background:rgba(0,0,0,.02); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:#595959; font-size:10px; flex-shrink:0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
+                Upload
+              </button>
+              <input type="file" id="formImgFile" accept="image/*" style="display:none;">
+            </div>
+          `, 'Optional image at the top of the form screen.')}
+          ${designerField('FORM IMAGE URL', designerInput('formImage', d.formImage||'', 'https://...'))}
         `)}
         ${designerSection('2 · Film screen', `
           ${designerField('EYEBROW', designerInput('filmEyebrow', d.filmEyebrow, 'e.g. NOW FILMING · NEW CAMPAIGN'))}
@@ -2378,9 +2446,12 @@ function renderAdminDesigner(main){
                 <span style="position:absolute; bottom:4px; left:0; right:0; text-align:center; font-size:9px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); font-weight:500;">Gradient</span>
               </button>
               ${d.heroImage ? `
-              <button class="hero-preset" data-src="${esc(d.heroImage)}" style="width:72px; height:96px; border-radius:6px; cursor:pointer; padding:0; border:2px solid #1c1c1c; background:url(${esc(d.heroImage)}) center/cover; position:relative; overflow:hidden;">
-                <span style="position:absolute; bottom:4px; left:0; right:0; text-align:center; font-size:9px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); font-weight:500;">Current</span>
-              </button>` : ''}
+              <div style="position:relative; flex-shrink:0;">
+                <button class="hero-preset" data-src="${esc(d.heroImage)}" style="width:72px; height:96px; border-radius:6px; cursor:pointer; padding:0; border:2px solid #1c1c1c; background:url(${esc(d.heroImage)}) center/cover; position:relative; overflow:hidden;">
+                  <span style="position:absolute; bottom:4px; left:0; right:0; text-align:center; font-size:9px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); font-weight:500;">Current</span>
+                </button>
+                <button id="removeHero" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:#1c1c1c; color:#fff; border:0; cursor:pointer; font-size:13px; line-height:18px; text-align:center; z-index:2; padding:0;">×</button>
+              </div>` : ''}
               <button id="uploadHero" style="width:72px; height:96px; border-radius:6px; cursor:pointer; padding:0; border:1px dashed rgba(0,0,0,.25); background:rgba(0,0,0,.02); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:#595959; font-size:10px;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
                 Upload
@@ -2431,6 +2502,20 @@ function renderAdminDesigner(main){
     fr.onload = () => { const cur = DB.getBoothDesign(designerEvId); cur.heroImage = fr.result; persistDesign(cur); renderAdmin(); };
     fr.readAsDataURL(f);
   };
+  main.querySelector('#removeHero')?.addEventListener('click', e => {
+    e.stopPropagation();
+    const cur = DB.getBoothDesign(designerEvId); cur.heroImage = ''; persistDesign(cur); renderAdmin();
+  });
+  main.querySelector('#uploadFormImg').onclick = () => main.querySelector('#formImgFile').click();
+  main.querySelector('#formImgFile').onchange = e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const fr = new FileReader();
+    fr.onload = () => { const cur = DB.getBoothDesign(designerEvId); cur.formImage = fr.result; persistDesign(cur); renderAdmin(); };
+    fr.readAsDataURL(f);
+  };
+  main.querySelector('#removeFormImg')?.addEventListener('click', () => {
+    const cur = DB.getBoothDesign(designerEvId); cur.formImage = ''; persistDesign(cur); renderAdmin();
+  });
   redrawDesignerPreview(); setupDesignerDrag();
 }
 function designerSection(title, body){
@@ -2550,12 +2635,25 @@ function setupDesignerDrag(){
 function designerStepPreview(d, step){
   if (step === 'form'){
     const align = d.formContentAlign || 'top';
+    const justifyMap = { center: 'center', bottom: 'flex-end', top: 'flex-start' };
+    const justify = justifyMap[align] || 'flex-start';
+    const formContent = `
+      <h1 class="serif" style="font-size:38px; line-height:44px; margin:0 0 10px; font-weight:500; letter-spacing:-0.02em; color:#00311C;">${esc(d.heading||'')}</h1>
+      <p style="font-size:15px; line-height:22px; color:#595959; margin:0 0 28px;">${esc(d.subhead||'')}</p>
+      <label class="el-input" style="margin-bottom:18px; height:48px;">${ICONS.mail}<input placeholder="Email address" disabled></label>
+      <button class="el-btn el-btn-xl el-btn-block" style="background:#E1DFDB; color:#1c1c1c; border-color:rgba(0,0,0,.08); opacity:.8;">${esc(d.cta||'')}</button>`;
+    if (d.formImage) {
+      return `
+        <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+          <div style="height:200px; flex-shrink:0; background:url(${esc(d.formImage)}) center/cover;"></div>
+          <div style="flex:1; display:flex; flex-direction:column; padding:24px 28px; overflow:auto; justify-content:${justify};">
+            ${formContent}
+          </div>
+        </div>`;
+    }
     return `
       <div style="${boothFormAlignStyle(align)}">
-        <h1 class="serif" style="font-size:38px; line-height:44px; margin:0 0 10px; font-weight:500; letter-spacing:-0.02em; color:#00311C;">${esc(d.heading||'')}</h1>
-        <p style="font-size:15px; line-height:22px; color:#595959; margin:0 0 28px;">${esc(d.subhead||'')}</p>
-        <label class="el-input" style="margin-bottom:18px; height:48px;">${ICONS.mail}<input placeholder="Email address" disabled></label>
-        <button class="el-btn el-btn-xl el-btn-block" style="background:#E1DFDB; color:#1c1c1c; border-color:rgba(0,0,0,.08); opacity:.8;">${esc(d.cta||'')}</button>
+        ${formContent}
       </div>`;
   }
   if (step === 'jude'){
@@ -2689,10 +2787,23 @@ async function handleScanLanding(){
         <div style="color:#6b6b6b; font-size:14px;">Opening the film</div>
       </div>
     </div>`;
-  const dest = (toRaw && /^https?:\/\//.test(toRaw)) ? toRaw : 'https://legora.com';
+  // Validate redirect destination: must be on an allowed domain to prevent open-redirect abuse.
+  // The list covers Legora's own domains; the app itself (same origin) is also allowed so staging
+  // and GitHub Pages deployments work without hardcoding every host.
+  const ALLOWED_REDIRECT_HOSTS = ['legora.com', 'www.legora.com'];
+  const dest = (() => {
+    if (!toRaw) return 'https://legora.com';
+    try {
+      const u = new URL(toRaw);
+      if (u.origin === location.origin || ALLOWED_REDIRECT_HOSTS.includes(u.hostname) ||
+          ALLOWED_REDIRECT_HOSTS.some(d => u.hostname.endsWith('.' + d))) return u.href;
+    } catch(e){}
+    return 'https://legora.com';
+  })();
   const write = (async () => {
     try {
       if (FB.init(FIREBASE_CONFIG) && FB.ready()) {
+        await FB.signIn();
         await FB.db.ref('scans/' + scanEv + '/' + scanId).set({ timestamp: Date.now(), ua: navigator.userAgent });
       }
     } catch(e){ console.warn('scan write failed', e); }
