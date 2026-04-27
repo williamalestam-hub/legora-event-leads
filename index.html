@@ -1014,7 +1014,7 @@ function setupFirebaseListeners(){
     rerenderActiveScreen();
   });
   FB.on('config/webhook', val => {
-    DB.saveWebhook(typeof val === 'string' ? val : '');
+    if (typeof val === 'string') DB.saveWebhook(val);
     // Don't rerender — webhook changes are silent config.
   });
   for (const ev of DB.getEvents()){
@@ -1023,7 +1023,7 @@ function setupFirebaseListeners(){
       rerenderActiveScreen();
     });
     FB.on('leads/' + ev.id, obj => {
-      DB.saveLeads(ev.id, obj ? Object.values(obj).filter(Boolean) : []);
+      if (obj) DB.saveLeads(ev.id, Object.values(obj).filter(Boolean));
       rerenderActiveScreen();
     });
     FB.on('boothDesign/' + ev.id, design => {
@@ -1038,7 +1038,7 @@ function setupFirebaseListeners(){
       rerenderActiveScreen();
     });
     FB.on('boothCaptures/' + ev.id, obj => {
-      DB.saveBooth(ev.id, obj ? Object.values(obj).filter(Boolean) : []);
+      if (obj) DB.saveBooth(ev.id, Object.values(obj).filter(Boolean));
       rerenderActiveScreen();
     });
   }
