@@ -1618,7 +1618,10 @@ function postLeadToWebhook(lead, att, evId, isUpdate){
     rating: lead.rating,
     notes: lead.notes || '',
   };
-  sendWebhook(url, payload).catch(err => showToast('Webhook failed: ' + (err && err.message || 'network error'), 'error'));
+  // no-cors fetch can't read the response, so a CORP-blocked opaque
+  // response rejects with "Failed to fetch" even when Clay received the
+  // POST. Swallow silently to match postBoothToWebhook.
+  sendWebhook(url, payload).catch(() => {});
 }
 function postBoothToWebhook(cap, evId){
   const url = DB.getWebhook();
