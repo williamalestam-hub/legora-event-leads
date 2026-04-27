@@ -1001,7 +1001,9 @@ async function pullFromFirebase(){
   const reps = await FB.once('config/reps');
   if (reps) DB.saveReps(Object.values(reps).filter(Boolean));
   const hook = await FB.once('config/webhook');
-  if (typeof hook === 'string') DB.saveWebhook(hook);
+  // Only save if non-empty — Firebase may return '' from a rolled-back write,
+  // which would erase a webhook URL the user just saved locally.
+  if (typeof hook === 'string' && hook) DB.saveWebhook(hook);
 }
 
 function setupFirebaseListeners(){
@@ -1014,7 +1016,9 @@ function setupFirebaseListeners(){
     rerenderActiveScreen();
   });
   FB.on('config/webhook', val => {
-    if (typeof val === 'string') DB.saveWebhook(val);
+    // Only update if Firebase has a non-empty URL — empty string usually means
+    // a write was rolled back, not that the user explicitly cleared the URL.
+    if (typeof val === 'string' && val) DB.saveWebhook(val);
     // Don't rerender — webhook changes are silent config.
   });
   for (const ev of DB.getEvents()){
@@ -1592,7 +1596,7 @@ function sendWebhook(url, payload){
 }
 function postLeadToWebhook(lead, att, evId, isUpdate){
   const url = DB.getWebhook();
-  if (!url) return;
+  if (!url) { showToast('Webhook URL not set in Settings', 'error'); return; }
   const ev = DB.getEvents().find(e => e.id === evId);
   const rep = DB.getReps().find(r => r.id === lead.repId);
   const payload = {
