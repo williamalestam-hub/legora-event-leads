@@ -873,7 +873,7 @@ const DB = {
 function defaultBoothDesign(){
   return {
     heading: "There's him looking at you.",
-    subhead: "Drop your email. We'll send a short film from Jude — and get in touch about Legora.",
+    subhead: "Drop your email and we'll send the short film straight to your inbox.",
     cta: 'Submit →',
     formContentAlign: 'top',   // 'top' | 'center' | 'bottom'
     filmLine1: "There's him looking at you,",
@@ -890,6 +890,10 @@ function defaultBoothDesign(){
     formImage: '',
     showQR: true,
     qrUrl: 'https://legora.com',
+    intentEnabled: true,
+    intentLabel: "What brings you here? (optional)",
+    intentOptions: ['Learning more', 'A demo of Legora', 'Job application', 'I want you to reach out'],
+    nextStepOptions: ['Send presentation', 'Schedule demo', 'Share case study', 'Intro another team member'],
   };
 }
 
@@ -1149,16 +1153,36 @@ function renderRoleSelect(){
 function goRep(){ goTo('rep-picker'); }
 function goManager(){ goTo('manager'); }
 function goBooth(){
-  const active = DB.getEvents().find(e => e.active) || DB.getEvents()[0];
-  if (!active){ showToast('No events yet — add one in Admin', 'error'); return; }
-  DB.setActiveEventId(active.id);
+  const events = DB.getEvents();
+  if (!events.length){ showToast('No events yet — add one in Admin', 'error'); return; }
+  const liveEvents = events.filter(e => e.active);
+  if (liveEvents.length > 1){
+    boothStep = 'pickEvent';
+    goTo('booth');
+    return;
+  }
+  const target = liveEvents[0] || events[0];
+  DB.setActiveEventId(target.id);
+  boothStep = 'form';
+  boothEmail = '';
+  boothIntent = '';
+  _boothActiveCapId = '';
   goTo('booth');
+}
+function boothPickEvent(evId){
+  DB.setActiveEventId(evId);
+  boothStep = 'form';
+  boothEmail = '';
+  boothIntent = '';
+  _boothActiveCapId = '';
+  renderBooth();
 }
 function goAdmin(){ goTo('admin'); }
 
 // ═══════════════ BOOTH ═══════════════
 let boothStep = 'form';
 let boothEmail = '';
+let boothIntent = '';
 let _boothTimers = [];
 let _boothActiveCapId = '';      // id of the capture currently on-screen
 let _boothActiveScanPath = '';   // Firebase path we're listening for the scan on
@@ -1166,8 +1190,10 @@ let _boothJudeStartedAt = 0;     // wall-clock ms when the film screen appeared
 const BOOTH_MIN_FILM_MS = 10000; // minimum time the film screen must stay visible
 function renderBooth(){
   document.getElementById('boothMark').innerHTML = legoraMark(22);
-  const evId = DB.getActiveEventId() || (DB.getEvents()[0] && DB.getEvents()[0].id);
-  const ev = DB.getEvents().find(e => e.id === evId);
+  const events = DB.getEvents();
+  const firstLive = events.find(e => e.active);
+  const evId = DB.getActiveEventId() || (firstLive && firstLive.id) || (events[0] && events[0].id);
+  const ev = events.find(e => e.id === evId);
   renderBoothStep(evId, ev);
 }
 function boothScanUrl(evId, capId, design){
@@ -1197,7 +1223,7 @@ function boothAdvanceToDone(opts){
   boothStep = 'done';
   renderBooth();
   _boothTimers = [
-    setTimeout(() => { boothStep = 'form'; boothEmail = ''; _boothActiveCapId = ''; renderBooth(); }, 3000),
+    setTimeout(() => { boothStep = 'form'; boothEmail = ''; boothIntent = ''; _boothActiveCapId = ''; renderBooth(); }, 3000),
   ];
 }
 function boothSkip(){
@@ -1205,12 +1231,44 @@ function boothSkip(){
   boothAdvanceToDone({ force: true });
 }
 function renderBoothStep(evId, ev){
-  const d = DB.getBoothDesign(evId);
   const wrap = document.getElementById('boothContent');
+  if (boothStep === 'pickEvent'){
+    const liveEvents = DB.getEvents().filter(e => e.active);
+    wrap.innerHTML = `
+      <div class="booth-form" style="padding:36px 28px; gap:14px;">
+        <div class="el-eyebrow" style="margin-bottom:6px;">PICK YOUR BOOTH</div>
+        <h1 class="booth-heading" style="margin-bottom:18px;">Which event is this kiosk?</h1>
+        <div style="display:flex; flex-direction:column; gap:10px;" id="boothEvList"></div>
+      </div>`;
+    const list = wrap.querySelector('#boothEvList');
+    liveEvents.forEach(e => {
+      const card = h('div', { class:'el-card rep-event-card', onclick: () => boothPickEvent(e.id) });
+      card.innerHTML = `
+        <div class="rep-event-icon">${legoraStar(16)}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="font-size:14px; font-weight:500;">${esc(e.name)}</div>
+            ${badge('copper','Live',true)}
+          </div>
+          <div style="font-size:12px; color:#6b6b6b; margin-top:2px;">${esc(e.code || '')}</div>
+        </div>
+        ${ICONS.chev}`;
+      list.appendChild(card);
+    });
+    return;
+  }
+  const d = DB.getBoothDesign(evId);
   const formAlignClass = d.formContentAlign === 'center' ? ' align-center' : d.formContentAlign === 'bottom' ? ' align-bottom' : '';
   if (boothStep === 'form'){
     const justifyMap = { center: 'center', bottom: 'flex-end', top: 'flex-start' };
     const fJustify = justifyMap[d.formContentAlign] || 'flex-start';
+    const intentOpts = Array.isArray(d.intentOptions) ? d.intentOptions.filter(o => (o||'').trim()) : [];
+    const showIntent = !!d.intentEnabled && intentOpts.length > 0;
+    const intentBlock = showIntent ? `
+        <div class="el-eyebrow" style="margin-bottom:8px;">${esc(d.intentLabel || 'What brings you here? (optional)')}</div>
+        <div id="boothIntentPads" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px;">
+          ${intentOpts.map(opt => `<button type="button" class="el-btn el-btn-ghost booth-intent-pad${boothIntent===opt?' selected':''}" data-intent="${esc(opt)}" style="font-size:13px; padding:8px 14px; ${boothIntent===opt?'background:#1c1c1c; color:#fff; border-color:#1c1c1c;':''}">${esc(opt)}</button>`).join('')}
+        </div>` : '';
     const formFields = `
         <h1 class="booth-heading">${esc(d.heading)}</h1>
         <p class="booth-sub">${esc(d.subhead)}</p>
@@ -1218,6 +1276,7 @@ function renderBoothStep(evId, ev){
           ${ICONS.mail}
           <input id="boothEmail" placeholder="Email address" type="email" autocomplete="email" value="${esc(boothEmail)}">
         </label>
+        ${intentBlock}
         <button id="boothSubmit" class="el-btn el-btn-xl el-btn-block booth-cta" style="opacity:.4; cursor:not-allowed;">${esc(d.cta)}</button>`;
     wrap.innerHTML = d.formImage ? `
       <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
@@ -1242,6 +1301,22 @@ function renderBoothStep(evId, ev){
     input.addEventListener('input', updateBtn);
     input.addEventListener('keydown', e => { if (e.key === 'Enter' && !submit.disabled) submitBooth(evId); });
     submit.addEventListener('click', () => { if (!submit.disabled) submitBooth(evId); });
+    const intentPadHost = document.getElementById('boothIntentPads');
+    if (intentPadHost){
+      intentPadHost.querySelectorAll('.booth-intent-pad').forEach(pad => {
+        pad.addEventListener('click', () => {
+          const v = pad.dataset.intent || '';
+          boothIntent = (boothIntent === v) ? '' : v;
+          intentPadHost.querySelectorAll('.booth-intent-pad').forEach(p => {
+            const on = p.dataset.intent === boothIntent;
+            p.classList.toggle('selected', on);
+            p.style.background = on ? '#1c1c1c' : '';
+            p.style.color = on ? '#fff' : '';
+            p.style.borderColor = on ? '#1c1c1c' : '';
+          });
+        });
+      });
+    }
     updateBtn();
     setTimeout(() => input.focus(), 100);
   } else if (boothStep === 'jude'){
@@ -1283,7 +1358,7 @@ function submitBooth(evId){
   const v = (boothEmail || '').trim();
   if (!v.includes('@') || !v.includes('.')) return;
   if (!evId){ showToast('No active event', 'error'); return; }
-  const cap = { id: uid('b'), email: v, timestamp: Date.now() };
+  const cap = { id: uid('b'), email: v, timestamp: Date.now(), intent: boothIntent || '' };
   const list = DB.getBooth(evId);
   list.unshift(cap);
   DB.saveBooth(evId, list);
@@ -1510,6 +1585,10 @@ function openQuickLog(attendeeId, existingLead){
   let rating = isEdit ? existingLead.rating : null;
   let notes  = isEdit ? (existingLead.notes || '') : '';
   let email  = isEdit ? (existingLead.attendeeEmail || att.email || '') : (att.email || '');
+  let nextStep = isEdit ? (existingLead.nextStep || '') : '';
+  const design = DB.getBoothDesign(evId);
+  const nextStepOpts = (Array.isArray(design.nextStepOptions) ? design.nextStepOptions : [])
+    .map(o => (o||'').trim()).filter(Boolean);
   let _submitted = false;  // guard against double-submit
   const close = () => { if (root.parentNode) root.parentNode.removeChild(root); };
   const root = h('div', { class:'sheet-backdrop', onclick: close });
@@ -1531,8 +1610,13 @@ function openQuickLog(attendeeId, existingLead){
     </div>
     <div class="el-eyebrow" style="margin-bottom:8px;">NOTES</div>
     <label class="el-textarea" style="margin-bottom:16px;">
-      <textarea id="qlNotes" placeholder="What did you talk about? Next steps?" rows="3">${esc(notes)}</textarea>
+      <textarea id="qlNotes" placeholder="What did you talk about?" rows="3">${esc(notes)}</textarea>
     </label>
+    ${nextStepOpts.length ? `
+    <div class="el-eyebrow" style="margin-bottom:8px;">NEXT STEP</div>
+    <div id="qlNextStepPads" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+      ${nextStepOpts.map(opt => `<button type="button" class="el-btn el-btn-ghost ql-next-pad${nextStep===opt?' selected':''}" data-step="${esc(opt)}" style="font-size:13px; padding:8px 12px; ${nextStep===opt?'background:#1c1c1c; color:#fff; border-color:#1c1c1c;':''}">${esc(opt)}</button>`).join('')}
+    </div>` : ''}
     <button id="qlSubmit" class="el-btn el-btn-xl el-btn-block el-btn-primary" ${rating?'':'disabled style="opacity:.4;"'}>${isEdit ? 'Update lead' : 'Log lead'}</button>`;
   document.body.appendChild(root);
   card.querySelector('#qlClose').onclick = close;
@@ -1547,6 +1631,22 @@ function openQuickLog(attendeeId, existingLead){
     };
   });
   card.querySelector('#qlNotes').oninput = e => notes = e.target.value;
+  const nextStepHost = card.querySelector('#qlNextStepPads');
+  if (nextStepHost){
+    nextStepHost.querySelectorAll('.ql-next-pad').forEach(pad => {
+      pad.onclick = () => {
+        const v = pad.dataset.step || '';
+        nextStep = (nextStep === v) ? '' : v;
+        nextStepHost.querySelectorAll('.ql-next-pad').forEach(p => {
+          const on = p.dataset.step === nextStep;
+          p.classList.toggle('selected', on);
+          p.style.background = on ? '#1c1c1c' : '';
+          p.style.color = on ? '#fff' : '';
+          p.style.borderColor = on ? '#1c1c1c' : '';
+        });
+      };
+    });
+  }
   card.querySelector('#qlSubmit').onclick = () => {
     if (!rating || _submitted) return;
     _submitted = true;
@@ -1558,6 +1658,7 @@ function openQuickLog(attendeeId, existingLead){
       repId: rep ? rep.id : '',
       rating,
       notes: notes.trim(),
+      nextStep: nextStep || '',
       timestamp: isEdit ? existingLead.timestamp : Date.now(),
       ...(isEdit ? { updatedAt: Date.now() } : {}),
       attendeeFirst: att.first || '',
@@ -1617,6 +1718,8 @@ function postLeadToWebhook(lead, att, evId, isUpdate){
     phone: '',
     rating: lead.rating,
     notes: lead.notes || '',
+    nextStep: lead.nextStep || '',
+    intent: '',
   };
   // no-cors fetch can't read the response, so a CORP-blocked opaque
   // response rejects with "Failed to fetch" even when Clay received the
@@ -1641,6 +1744,8 @@ function postBoothToWebhook(cap, evId){
     phone: '',
     rating: '',
     notes: '',
+    intent: cap.intent || '',
+    nextStep: '',
   };
   sendWebhook(url, payload).catch(() => {});
 }
@@ -1650,7 +1755,8 @@ function renderManager(){
   document.getElementById('mgrMark').innerHTML = legoraMark(20);
   const events = DB.getEvents();
   const sel = document.getElementById('mgrEventSelect');
-  const current = DB.getActiveEventId() || (events[0] && events[0].id) || '';
+  const firstLive = events.find(e => e.active);
+  const current = DB.getActiveEventId() || (firstLive && firstLive.id) || (events[0] && events[0].id) || '';
   sel.innerHTML = events.map(e => `<option value="${esc(e.id)}" ${e.id===current?'selected':''}>${esc(e.name)}</option>`).join('');
   sel.onchange = () => { DB.setActiveEventId(sel.value); renderManager(); };
   if (!events.length){
@@ -1664,7 +1770,8 @@ function renderManager(){
   const ev = events.find(e => e.id === current) || events[0];
   document.getElementById('mgrEvName').textContent = ev.name;
   document.getElementById('mgrEvCode').textContent = ev.code || '';
-  document.getElementById('mgrDate').textContent = 'LIVE · ' + new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}).toUpperCase() + ', ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const stamp = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}).toUpperCase() + ', ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('mgrDate').textContent = (ev.active ? 'LIVE · ' : '') + stamp;
   const leads = DB.getLeads(ev.id);
   const booth = DB.getBooth(ev.id);
   const atts = DB.getAttendees(ev.id);
@@ -1736,6 +1843,7 @@ function renderManager(){
             </div>
             <div style="font-size:12px; color:#6b6b6b; margin-top:1px;">${esc(company)}</div>
             ${l.notes ? `<div style="font-size:12px; color:#595959; margin-top:4px; line-height:17px;">"${esc(l.notes)}"</div>` : ''}
+            ${l.nextStep ? `<div style="margin-top:6px;"><span style="display:inline-block; font-size:11px; padding:2px 8px; border-radius:99px; background:#f0ede5; color:#3d3d3d;">→ ${esc(l.nextStep)}</span></div>` : ''}
             <div style="font-size:11px; color:#949494; margin-top:4px;">${esc(repName)} · ${fmtMinsAgo(l.timestamp)}</div>
           </div>
         </div>`;
@@ -1757,13 +1865,15 @@ function miniBar(count, max){
   return out;
 }
 function exportCSV(){
-  const evId = DB.getActiveEventId() || (DB.getEvents()[0] && DB.getEvents()[0].id);
+  const events = DB.getEvents();
+  const firstLive = events.find(e => e.active);
+  const evId = DB.getActiveEventId() || (firstLive && firstLive.id) || (events[0] && events[0].id);
   if (!evId) return;
   const leads = DB.getLeads(evId);
   const atts = DB.getAttendees(evId);
   const reps = DB.getReps();
   const ev = DB.getEvents().find(e => e.id === evId);
-  const rows = [['Timestamp','Event','Rep','First','Last','Email','Company','Title','Rating','Notes']];
+  const rows = [['Timestamp','Event','Rep','First','Last','Email','Company','Title','Rating','Notes','Next step','Intent']];
   leads.forEach(l => {
     const a = atts.find(x => x.id === l.attendeeId) || {};
     const r = reps.find(x => x.id === l.repId) || {};
@@ -1777,10 +1887,11 @@ function exportCSV(){
       a.company || l.attendeeCompany || '',
       a.title || l.attendeeTitle || '',
       l.rating||'', (l.notes||'').replace(/\n/g,' '),
+      l.nextStep || '', '',
     ]);
   });
   DB.getBooth(evId).forEach(b => {
-    rows.push([ new Date(b.timestamp).toISOString(), ev?ev.name:'', 'BOOTH', '', '', b.email||'', '', '', 'booth', '' ]);
+    rows.push([ new Date(b.timestamp).toISOString(), ev?ev.name:'', 'BOOTH', '', '', b.email||'', '', '', 'booth', '', '', b.intent || '' ]);
   });
   const csv = rows.map(r => r.map(v => `"${String(v==null?'':v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
@@ -2105,9 +2216,8 @@ function admAddEvent(existing){
     };
     let events = DB.getEvents();
     if (isEdit){
-      events = events.map(x => x.id === ev.id ? { ...x, ...ev } : (ev.active ? { ...x, active:false } : x));
+      events = events.map(x => x.id === ev.id ? { ...x, ...ev } : x);
     } else {
-      if (ev.active) events = events.map(x => ({ ...x, active:false }));
       events.push(ev);
     }
     DB.saveEvents(events);
@@ -2122,9 +2232,10 @@ function admEditEvent(id){
   if (ev) admAddEvent(ev);
 }
 function admToggleActive(id){
-  const events = DB.getEvents().map(e => ({ ...e, active: e.id === id }));
+  const events = DB.getEvents().map(e => e.id === id ? { ...e, active: !e.active } : e);
   DB.saveEvents(events);
-  DB.setActiveEventId(id);
+  const flipped = events.find(e => e.id === id);
+  if (flipped && flipped.active) DB.setActiveEventId(id);
   if (FB.ready()) events.forEach(e => FB.set('events/' + e.id, e));
   renderAdmin();
 }
@@ -2350,8 +2461,8 @@ function renderAdminBooth(main, evId){
       <p class="admin-subtext">Self-service email drops at the booth kiosk.</p>
     </div>
     <div class="el-card" style="overflow:hidden;">
-      <div class="admin-table-head" style="grid-template-columns: 2.5fr 2fr 1.5fr 1fr 32px;">
-        ${['Email','Name','Firm','When',''].map(x => `<span class="el-eyebrow" style="font-size:10px;">${esc(x)}</span>`).join('')}
+      <div class="admin-table-head" style="grid-template-columns: 2.5fr 2fr 1.5fr 1.3fr 1fr 32px;">
+        ${['Email','Name','Firm','Intent','When',''].map(x => `<span class="el-eyebrow" style="font-size:10px;">${esc(x)}</span>`).join('')}
       </div>
       <div id="admBoothTable"></div>
     </div>`;
@@ -2363,11 +2474,12 @@ function renderAdminBooth(main, evId){
     const displayName = matched ? ((matched.first||'') + ' ' + (matched.last||'')).trim() : '—';
     const firm = matched ? (matched.company || '—') : '—';
     const avatarSrc = matched ? displayName : c.email;
-    const row = h('div', { class:'admin-table-row', style:'grid-template-columns: 2.5fr 2fr 1.5fr 1fr 32px;' });
+    const row = h('div', { class:'admin-table-row', style:'grid-template-columns: 2.5fr 2fr 1.5fr 1.3fr 1fr 32px;' });
     row.innerHTML = `
       <div style="display:flex; align-items:center; gap:10px;">${avatarHtml(avatarSrc, 26)}<span class="mono" style="font-size:12px;">${esc(c.email||'')}</span></div>
       <span style="color:${matched?'#1c1c1c':'#9b9b9b'}; font-size:13px;">${esc(displayName)}</span>
       <span style="color:${matched?'#595959':'#9b9b9b'}; font-size:13px;">${esc(firm)}</span>
+      <span style="color:${c.intent?'#3d3d3d':'#9b9b9b'}; font-size:12px;">${esc(c.intent||'—')}</span>
       <span class="mono" style="font-size:12px; color:#6b6b6b;">${fmtMinsAgo(c.timestamp)}</span>
       <button title="Delete capture" style="background:none; border:none; cursor:pointer; color:#c52925; padding:0; display:flex; align-items:center;" data-cid="${esc(c.id)}">${ICONS.trash}</button>`;
     row.querySelector('[data-cid]').onclick = () => {
@@ -2447,7 +2559,17 @@ function renderAdminDesigner(main){
           `, 'Optional image at the top of the form screen.')}
           ${designerField('FORM IMAGE URL', designerInput('formImage', d.formImage||'', 'https://...'))}
         `)}
-        ${designerSection('2 · Film screen', `
+        ${designerSection('2 · Intent picker', `
+          ${designerField('SHOW INTENT PICKER', `
+            <label class="el-input" id="intentToggle" style="cursor:pointer; user-select:none; width: fit-content; border:0; padding:0;">
+              <span class="toggle ${d.intentEnabled?'on':''}"><span class="knob"></span></span>
+              <span style="font-size:13px; margin-left:10px;">Picker is ${d.intentEnabled?'shown':'hidden'}</span>
+            </label>
+          `, 'When on, prospects see an optional question after the email field. Single-select, no follow-up call assumed.')}
+          ${designerField('QUESTION LABEL', designerInput('intentLabel', d.intentLabel||'', 'What brings you here? (optional)'))}
+          ${designerField('OPTIONS', designerListTextarea('intentOptions', d.intentOptions, 'One option per line\nLearning more\nA demo of Legora\n...'), 'One option per line. Empty list hides the picker.')}
+        `)}
+        ${designerSection('3 · Film screen', `
           ${designerField('EYEBROW', designerInput('filmEyebrow', d.filmEyebrow, 'e.g. NOW FILMING · NEW CAMPAIGN'))}
           <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
             ${designerField('LINE 1', designerInput('filmLine1', d.filmLine1, ''))}
@@ -2463,13 +2585,13 @@ function renderAdminDesigner(main){
           ${designerField('QR CODE URL', designerInput('qrUrl', d.qrUrl, 'https://legora.com/film'), 'Where the QR sends visitors when scanned.')}
           <div style="font-size:12px; color:#6b6b6b; background:#f5f3ee; border-radius:8px; padding:10px 12px; margin-top:-6px;">✦ Drag the text block and QR code directly in the preview to reposition them.</div>
         `)}
-        ${designerSection('3 · Thank-you', `
+        ${designerSection('4 · Thank-you', `
           <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px;">
             ${designerField('HEADLINE', designerInput('thanksHeadline', d.thanksHeadline, 'Got it.'))}
             ${designerField('BODY', designerTextarea('thanksBody', d.thanksBody, 'The film is on its way…'))}
           </div>
         `)}
-        ${designerSection('4 · Visuals', `
+        ${designerSection('5 · Visuals', `
           ${designerField('HERO IMAGE', `
             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:stretch;" id="heroImgRow">
               <button class="hero-preset" data-src="" style="width:72px; height:96px; border-radius:6px; cursor:pointer; padding:0; border:1px solid rgba(0,0,0,.12); background:linear-gradient(135deg, #005230, #00311C); position:relative; overflow:hidden;">
@@ -2491,6 +2613,9 @@ function renderAdminDesigner(main){
           `, 'Upload a PNG or JPG, min 900×1600. Paste a URL below for a hosted image.')}
           ${designerField('HERO URL', designerInput('heroImage', d.heroImage, 'https://...'))}
         `)}
+        ${designerSection('6 · Rep lead form', `
+          ${designerField('NEXT-STEP OPTIONS', designerListTextarea('nextStepOptions', d.nextStepOptions, 'One option per line\nSend presentation\nSchedule demo\n...'), 'Shown to reps when logging a lead. One option per line. Empty list hides the picker.')}
+        `)}
       </div>
       <div id="designPreviewCol" style="position:sticky; top:20px;">
         <div class="el-eyebrow" style="margin-bottom:10px;">LIVE PREVIEW</div>
@@ -2507,6 +2632,12 @@ function renderAdminDesigner(main){
   main.querySelectorAll('[data-design-key]').forEach(el => {
     el.addEventListener('input', () => updateDesignField(el.dataset.designKey, el.value));
   });
+  main.querySelectorAll('[data-design-list-key]').forEach(el => {
+    el.addEventListener('input', () => {
+      const arr = (el.value || '').split('\n').map(s => s.trim()).filter(Boolean);
+      updateDesignField(el.dataset.designListKey, arr);
+    });
+  });
   main.querySelectorAll('[data-design-seg-key]').forEach(btn => {
     btn.onclick = () => {
       const cur = DB.getBoothDesign(designerEvId);
@@ -2522,6 +2653,12 @@ function renderAdminDesigner(main){
     persistDesign(cur);
     renderAdmin();
   };
+  main.querySelector('#intentToggle')?.addEventListener('click', () => {
+    const cur = DB.getBoothDesign(designerEvId);
+    cur.intentEnabled = !cur.intentEnabled;
+    persistDesign(cur);
+    renderAdmin();
+  });
   main.querySelectorAll('.hero-preset').forEach(btn => {
     btn.onclick = () => { const cur = DB.getBoothDesign(designerEvId); cur.heroImage = btn.dataset.src; persistDesign(cur); renderAdmin(); };
   });
@@ -2559,6 +2696,10 @@ function designerInput(key, val, placeholder){
 }
 function designerTextarea(key, val, placeholder){
   return `<label class="el-input" style="width:100%; height:auto; align-items:stretch; padding:10px 12px;"><textarea data-design-key="${esc(key)}" placeholder="${esc(placeholder||'')}" rows="3" style="width:100%; border:0; outline:0; background:transparent; font:inherit; color:inherit; resize:vertical; min-height:60px;">${esc(val||'')}</textarea></label>`;
+}
+function designerListTextarea(key, list, placeholder){
+  const text = Array.isArray(list) ? list.join('\n') : (list || '');
+  return `<label class="el-input" style="width:100%; height:auto; align-items:stretch; padding:10px 12px;"><textarea data-design-list-key="${esc(key)}" placeholder="${esc(placeholder||'')}" rows="4" style="width:100%; border:0; outline:0; background:transparent; font:inherit; color:inherit; resize:vertical; min-height:80px;">${esc(text)}</textarea></label>`;
 }
 // Segmented button group that writes directly to the design on click.
 function designerSegment(key, current, options){
@@ -2667,10 +2808,18 @@ function designerStepPreview(d, step){
     const align = d.formContentAlign || 'top';
     const justifyMap = { center: 'center', bottom: 'flex-end', top: 'flex-start' };
     const justify = justifyMap[align] || 'flex-start';
+    const intentOpts = Array.isArray(d.intentOptions) ? d.intentOptions.filter(o => (o||'').trim()) : [];
+    const showIntent = !!d.intentEnabled && intentOpts.length > 0;
+    const intentPreview = showIntent ? `
+      <div class="el-eyebrow" style="margin-bottom:8px;">${esc(d.intentLabel || 'What brings you here? (optional)')}</div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px;">
+        ${intentOpts.map(opt => `<span class="el-btn el-btn-ghost" style="font-size:13px; padding:8px 14px; pointer-events:none;">${esc(opt)}</span>`).join('')}
+      </div>` : '';
     const formContent = `
       <h1 class="serif" style="font-size:38px; line-height:44px; margin:0 0 10px; font-weight:500; letter-spacing:-0.02em; color:#00311C;">${esc(d.heading||'')}</h1>
       <p style="font-size:15px; line-height:22px; color:#595959; margin:0 0 28px;">${esc(d.subhead||'')}</p>
       <label class="el-input" style="margin-bottom:18px; height:48px;">${ICONS.mail}<input placeholder="Email address" disabled></label>
+      ${intentPreview}
       <button class="el-btn el-btn-xl el-btn-block" style="background:#E1DFDB; color:#1c1c1c; border-color:rgba(0,0,0,.08); opacity:.8;">${esc(d.cta||'')}</button>`;
     if (d.formImage) {
       return `
